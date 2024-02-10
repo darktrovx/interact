@@ -14,11 +14,6 @@ Create interaction points in the world with selectable options.
 
 Requires [ox_lib](https://github.com/overextended/ox_lib)
 
-## Videos
-
-https://github.com/IcarianForge/interact/assets/7463741/66c01e4a-aef2-48b7-a5f5-077f6e4271e1
-
-
 Options can trigger
 ```
 Functions
