@@ -12,6 +12,9 @@ Create interaction points in the world with selectable options.
 
 # Guides & Information
 
+[Video Demo 1](https://youtu.be/dQ7Pdq1pdHQ)
+[Video Demo 2](https://youtu.be/9ZLK0kl2k94)
+
 Requires [ox_lib](https://github.com/overextended/ox_lib)
 
 Options can trigger
