@@ -69,7 +69,7 @@ local function CreateInteractions()
         if CheckCanInteract(interaction) then
 
             if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
-                if i == 1 and interaction.curDist <= interaction.interactDst and (interaction.entity and interaction.entity == CurrentTarget) then
+                if i == 1 and interaction.curDist <= interaction.interactDst and (interaction.entity and (interaction.entity == CurrentTarget) or true) then
                     if interaction.id ~= CURRENT_OPTION then
                         CURRENT_OPTION = interaction.id
                         CURRENT_SELECTION = 1
