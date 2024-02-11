@@ -5,12 +5,6 @@
 -- 4. Enjoy your new style!
 
 return {
-    Disable = {
-        onDeath = true, -- Disable interactions on death
-        onNuiFocus = true, -- Disable interactions while NUI is focused
-        onVehicle = true, -- Disable interactions while in a vehicle
-        onHandCuff = true, -- Disable interactions while handcuffed
-    },
     Debug = GetConvar('debug', 'false') == 'true' and true or false, -- Enable / Disable debug mode
     Style = 'gold_circle', -- gold_circle (default), blue_circle, green_square, glitch 
     Textures = { -- Do not change
@@ -20,6 +14,12 @@ return {
         unselected = 'unselected',
         select_opt = 'select_opt',
         unselect_opt = 'unselect_opt',
+    },
+    Disable = {
+        onDeath = true, -- Disable interactions on death
+        onNuiFocus = true, -- Disable interactions while NUI is focused
+        onVehicle = true, -- Disable interactions while in a vehicle
+        onHandCuff = true, -- Disable interactions while handcuffed
     },
 
     -- Nearby object distance check.

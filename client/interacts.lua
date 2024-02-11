@@ -14,27 +14,29 @@ local IsControlJustPressed = IsControlJustPressed
 local SetScriptGfxAlignParams = SetScriptGfxAlignParams
 local ResetScriptGfxAlign = ResetScriptGfxAlign
 local IsNuiFocused = IsNuiFocused
+local IsPedDeadOrDying = IsPedDeadOrDying
+local IsPedCuffed = IsPedCuffed
 
 local selected, unselected, interact, pin = textures.selected, textures.unselected, textures.interact, textures.pin
 
 local function createOptions(coords, options)
-    local width = utils:getOptionsWidth(options)
+    local width = utils.getOptionsWidth(options)
     if #options == 1 then
         if options[1].canInteract then
             if options[1].canInteract() then
-                utils:drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
+                utils.drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
             end
         else
-            utils:drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
+            utils.drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
         end
     else
         for i = 1, #options do
             if options[i].canInteract then
                 if options[i].canInteract() then
-                    utils:drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
+                    utils.drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
                 end
             else
-                utils:drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
+                utils.drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
             end
         end
     end
@@ -59,7 +61,7 @@ local nearby = {}
 local function CreateInteractions()
     for i = 1, #nearby do
         local interaction = nearby[i]
-        local coords = interaction.coords or utils:getCoordsFromInteract(interaction)
+        local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
         if CheckCanInteract(interaction) then
 
