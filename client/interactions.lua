@@ -1,4 +1,5 @@
-local log, utils = require 'shared.log', require 'client.utils'
+local log = require 'shared.log'
+local utils = require 'client.utils'
 local api = {}
 
 local interactions, filteredInteractions = {}, {}
@@ -241,7 +242,7 @@ function api.addEntityInteraction(netID, options, data)
     local entity
     if type(netID) == 'number' and not NetworkDoesNetworkIdExist(netID) then
         entity = netID
-        netID = utils:getEntity(netID)
+        netID = utils.getEntity(netID)
     end
 
     if not checkParams(entity, options, data) then
@@ -501,7 +502,7 @@ function api.getNearbyInteractions()
         for i = 1, amountOfInteractions do
             local interaction = filteredInteractions[i]
 
-            local coords = interaction.coords or utils:getCoordsFromInteract(interaction)
+            local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
             local distance = #(coords - playercoords)
 

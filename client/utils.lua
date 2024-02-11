@@ -22,21 +22,22 @@ local GetOffsetFromEntityInWorldCoords = GetOffsetFromEntityInWorldCoords
 local IsEntityAPed = IsEntityAPed
 local GetEntityCoords = GetEntityCoords
 
-return {
-    getNet = function (self, entity)
+local utils = {}
+
+    function utils.getNet(entity)
         return NetworkGetNetworkIdFromEntity(entity)
-    end,
+    end
 
-    getEntity = function(self, netID)
+    function utils.getEntity(netID)
         return NetworkGetEntityFromNetworkId(netID)
-    end,
+    end
 
-    getTrunkOffset = function(self, entity)
+     function utils.getTrunkOffset(entity)
         local min, _ = GetModelDimensions(GetEntityModel(entity))
         return GetOffsetFromEntityInWorldCoords(entity, 0.0, min.y - 0.5, 0.0)
-    end,
+    end
 
-    getOptionsWidth = function(self, options)
+     function utils.getOptionsWidth(options)
         if IsDuplicityVersion() then
             log:error('This function is not available on server side')
             return
@@ -52,9 +53,9 @@ return {
         end
 
         return width
-    end,
+    end
 
-    getCoordsFromInteract = function(self, interaction)
+     function utils.getCoordsFromInteract(interaction)
         if interaction.entity then
             if DoesEntityExist(interaction.entity) then
                 if interaction.bone then
@@ -78,9 +79,9 @@ return {
         end
 
         return vec3(0.0, 0.0, 0.0)
-    end,
+    end
 
-    drawOption = function(self, coords, text, spriteDict, spriteName, row, width, showDot)
+    function utils.drawOption(coords, text, spriteDict, spriteName, row, width, showDot)
         SetScriptGfxAlignParams((showDot == true and 0.03 or 0.018) + (width / 2), row * 0.03 - 0.0125, 0.0, 0.0)
         SetTextScale(0, 0.3)
         SetTextFont(4)
@@ -107,4 +108,4 @@ return {
         ClearDrawOrigin()
     end
 
-}
+return utils

@@ -4,9 +4,18 @@ use_experimental_fxv2_oal 'yes'
 lua54 'yes'
 
 name 'interact'
-author 'darktrovx'
+author 'darktrovx, chatdisabled, fjamzoo, pushkart2'
 description 'Interaction system'
 repository 'https://github.com/darktrovx/interact'
+
+files {
+    'client/interactions.lua',
+    'client/utils.lua',
+    'shared/settings.lua',
+    'shared/log.lua',
+    'assets/**/*.png'
+}
+
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -19,12 +28,4 @@ client_scripts {
 }
 server_scripts {
     'server/main.lua',
-}
-
-files {
-    'client/interactions.lua',
-    'shared/utils.lua',
-    'shared/settings.lua',
-    'shared/log.lua',
-    'assets/**/*.png'
 }
