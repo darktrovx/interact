@@ -1,10 +1,11 @@
+local interactions = require 'client.interactions'
+local utils = require 'client.utils'
+local settings = require 'shared.settings'
+local textures = settings.Textures
 local CURRENT_SELECTION = 1
 local CURRENT_OPTION = 0
-local CACHED_OPTIONS = {}
-
 
 -- CACHE
-local GetEntityCoords = GetEntityCoords
 local SetDrawOrigin = SetDrawOrigin
 local DrawSprite = DrawSprite
 local ClearDrawOrigin = ClearDrawOrigin
@@ -12,41 +13,35 @@ local Wait = Wait
 local IsControlJustPressed = IsControlJustPressed
 local SetScriptGfxAlignParams = SetScriptGfxAlignParams
 local ResetScriptGfxAlign = ResetScriptGfxAlign
+local IsNuiFocused = IsNuiFocused
 
-local Utils = require 'client.utilities'
-local Settings = require 'config.settings'
-local Textures = Settings.Textures
-
-local selected, unselected, interact, pin = Textures.selected, Textures.unselected, Textures.interact, Textures.pin
-
-local drawOption, getCoordsFromInteract, getOptionsWidth in Utils
+local selected, unselected, interact, pin = textures.selected, textures.unselected, textures.interact, textures.pin
 
 local function createOptions(coords, options)
-    local width = getOptionsWidth(options)
+    local width = utils:getOptionsWidth(options)
     if #options == 1 then
         if options[1].canInteract then
             if options[1].canInteract() then
-                drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
+                utils:drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
             end
         else
-            drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
+            utils:drawOption(coords, options[1].label, 'interactions_txd', selected, 0, width, false)
         end
     else
         for i = 1, #options do
             if options[i].canInteract then
                 if options[i].canInteract() then
-                    drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
+                    utils:drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
                 end
             else
-                drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
+                utils:drawOption(coords, options[i].label, 'interactions_txd', CURRENT_SELECTION == i and selected or unselected, i - 1, width, true)
             end
         end
     end
 end
 
 local function CheckCanInteract(interaction)
-    local avail = 0
-    for optionIndex, option in ipairs(interaction.options) do
+    for _, option in ipairs(interaction.options) do
         if option.canInteract then
             if option.canInteract() then
                 return true
@@ -64,7 +59,7 @@ local nearby = {}
 local function CreateInteractions()
     for i = 1, #nearby do
         local interaction = nearby[i]
-        local coords = interaction.coords or getCoordsFromInteract(interaction)
+        local coords = interaction.coords or utils:getCoordsFromInteract(interaction)
 
         if CheckCanInteract(interaction) then
 
@@ -114,35 +109,47 @@ local function CreateInteractions()
     end
 end
 
-local thread = false
-local function nearbyThread()
-    if thread then
-        return
+local function isDisabled()
+    if LocalPlayer.state.interactionsDisabled then
+        return true
     end
 
-    thread = true
-    lib.requestStreamedTextureDict('interactions_txd')
-
-    while thread do
-        CreateInteractions()
-        Wait(0)
+    if settings.Disable.onDeath and (IsPedDeadOrDying(cache.ped) or LocalPlayer.state.isDead) then
+        return true
     end
 
-    SetStreamedTextureDictAsNoLongerNeeded('interactions_txd')
+    if settings.Disable.onNuiFocus and IsNuiFocused() then
+        return true
+    end
+
+    if settings.Disable.onVehicle and cache.vehicle then
+        return true
+    end
+
+    if settings.Disable.onHandCuff and IsPedCuffed(cache.ped) then
+        return true
+    end
+
+    return false
 end
 
-local Interactions = require 'client.interactions'
+-- Fast thread
+CreateThread(function ()
+    lib.requestStreamedTextureDict('interactions_txd')
+    while true do
+        local wait = 500
+        if next(nearby) and not isDisabled() then
+            wait = 0
+            CreateInteractions()
+        end
+        Wait(wait)
+    end
+end)
 
+-- Slow checker thread
 CreateThread(function()
     while true do
-        nearby = Interactions.getNearbyInteractions()
-
-        if nearby and table.type(nearby) == 'array' then
-            CreateThread(nearbyThread)
-        elseif thread then
-            thread = false
-        end
-
-        Wait(250)
+        nearby = interactions.getNearbyInteractions()
+        Wait(500)
     end
 end)
