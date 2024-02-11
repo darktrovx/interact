@@ -1,7 +1,12 @@
 fx_version 'cerulean'
 game 'gta5'
 use_experimental_fxv2_oal 'yes'
-lua54        'yes'
+lua54 'yes'
+
+name 'interact'
+author 'darktrovx'
+description 'Interaction system'
+repository 'https://github.com/darktrovx/interact'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -10,8 +15,8 @@ shared_scripts {
 client_scripts {
     'client/textures.lua',
     'client/interacts.lua',
-    'client/utils.lua',
     'client/raycast.lua',
+    'client/test.lua'
 }
 server_scripts {
     'server/main.lua',
@@ -19,7 +24,8 @@ server_scripts {
 
 files {
     'client/interactions.lua',
-    'client/utilities.lua',
-    'config/settings.lua',
+    'shared/utils.lua',
+    'shared/settings.lua',
+    'shared/log.lua',
     'assets/**/*.png'
-} 
+}

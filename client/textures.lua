@@ -1,7 +1,7 @@
-local Settings = require 'config.settings'
-local Textures = Settings.Textures
+local settings = require 'shared.settings'
+local textures = settings.Textures
 local txd = CreateRuntimeTxd('interactions_txd')
 
-for k,v in pairs(Textures) do
-    CreateRuntimeTextureFromImage(txd, tostring(v), "assets/"..Settings.Style.."/"..v..".png")
+for _, v in pairs(textures) do
+    CreateRuntimeTextureFromImage(txd, tostring(v), "assets/"..settings.Style.."/"..v..".png")
 end
