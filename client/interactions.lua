@@ -1,4 +1,4 @@
-local log, utils = require 'shared.log', require 'shared.utils'
+local log, utils = require 'shared.log', require 'client.utils'
 local api = {}
 
 local interactions, filteredInteractions = {}, {}
@@ -115,7 +115,6 @@ end
 ---@param data table : { distance, interactDst }
 -- Add an interaction point at a set of coords
 function api.addInteraction(coords, options, data)
-    print(coords, options, data)
     if not coords then
         log:error('Coords are required to add an interaction')
         return

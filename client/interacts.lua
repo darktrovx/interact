@@ -1,5 +1,5 @@
 local interactions = require 'client.interactions'
-local utils = require 'shared.utils'
+local utils = require 'client.utils'
 local settings = require 'shared.settings'
 local textures = settings.Textures
 local CURRENT_SELECTION = 1

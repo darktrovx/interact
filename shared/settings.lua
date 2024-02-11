@@ -23,5 +23,5 @@ return {
     },
 
     -- Nearby object distance check.
-    nearbyObjectDistance = 5.0,
+    nearbyObjectDistance = 20.0, -- Keep it at 15.0 at minimum.
 }

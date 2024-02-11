@@ -55,10 +55,6 @@ return {
     end,
 
     getCoordsFromInteract = function(self, interaction)
-        if IsDuplicityVersion() then
-            log:error('This function is not available on server side')
-            return
-        end
         if interaction.entity then
             if DoesEntityExist(interaction.entity) then
                 if interaction.bone then
@@ -85,10 +81,6 @@ return {
     end,
 
     drawOption = function(self, coords, text, spriteDict, spriteName, row, width, showDot)
-        if IsDuplicityVersion() then
-            log:error('This function is not available on server side')
-            return
-        end
         SetScriptGfxAlignParams((showDot == true and 0.03 or 0.018) + (width / 2), row * 0.03 - 0.0125, 0.0, 0.0)
         SetTextScale(0, 0.3)
         SetTextFont(4)
