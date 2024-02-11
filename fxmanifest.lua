@@ -23,7 +23,7 @@ server_scripts {
 
 files {
     'client/interactions.lua',
-    'shared/utils.lua',
+    'client/utils.lua',
     'shared/settings.lua',
     'shared/log.lua',
     'assets/**/*.png'
