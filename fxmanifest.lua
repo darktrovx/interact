@@ -15,8 +15,7 @@ shared_scripts {
 client_scripts {
     'client/textures.lua',
     'client/interacts.lua',
-    'client/raycast.lua',
-    'client/test.lua'
+    'client/raycast.lua'
 }
 server_scripts {
     'server/main.lua',
