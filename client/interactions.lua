@@ -1,12 +1,13 @@
 local log = require 'shared.log'
 local utils = require 'client.utils'
-local nearbyObjectDistance = require 'shared.settings'.nearbyObjectDistance
+local settings = require 'shared.settings'
 local interactions, filteredInteractions = {}, {}
 local table_sort = table.sort
 
 -- CACHE.
 local MODELS = {}
 local ENTITIES = {}
+local ENTITY_BONES = {}
 local NETWORKED_ENTITIES = {}
 
 local api = {}
@@ -15,7 +16,7 @@ AddEventHandler('interactions:groupsChanged', function(newgroups)
     -- Use this event handler to loop through all current interactions and remove any that are not in the new groups that way we limit the amount of iterations needed
 end)
 
-local function checkParams(entity, options, data)
+local function checkParams(entity, options)
     if not entity then
         log:error('Entity is required to add an interaction')
         return
@@ -172,7 +173,7 @@ function api.addLocalEntityInteraction(data)
 
     -- If the entity is already registered, update it
     log:debug('Updating entity %s in interactions', entity)
-    for index, option in pairs(options) do
+    for index, option in pairs(data.options) do
         if option.name and ENTITIES[entity].options[index]?.name == option.name then
             log:debug('Option with name: ( %s ) already exists, updating', option.name)
             ENTITIES[entity].options[index] = option
@@ -222,7 +223,7 @@ function api.addEntityInteraction(data)
         netId = utils.getEntity(netId)
     end
 
-    if not checkParams(entity, options, data) then
+    if not checkParams(entity, data.options) then
         if NETWORKED_ENTITIES[netId] then
             NETWORKED_ENTITIES[netId] = nil
         end
@@ -232,7 +233,8 @@ function api.addEntityInteraction(data)
     -- If the entity is not networked, add it as a local entity
     if not NetworkGetEntityIsNetworked(entity) then
         log:debug('Entity %s is not networked, adding as a local entity', entity)
-        return api.addLocalEntityInteraction(entity, options, data)
+        data.entity = entity
+        return api.addLocalEntityInteraction(data)
     end
 
     -- If then netId not registered yet, add it
@@ -244,7 +246,7 @@ function api.addEntityInteraction(data)
             id = id,
             name = data.name or 'interaction:'..id,
             entity = entity,
-            options = options or {},
+            options = data.options or {},
             distance = data.distance or 10.0,
             interactDst = data.interactDst or 1.0,
             offset = data.offset or vec(0.0, 0.0, 0.0),
@@ -260,7 +262,7 @@ function api.addEntityInteraction(data)
 
     -- If the networkID is already registered, update it
     log:debug('Updating networkID %s in interactions', netId)
-    for index, option in pairs(options) do
+    for index, option in pairs(data.options) do
         if option.name and NETWORKED_ENTITIES[netId].options[index]?.name == option.name then
             log:debug('Option with name: ( %s ) already exists, updating', option.name)
             NETWORKED_ENTITIES[netId].options[index] = option
@@ -302,16 +304,72 @@ end exports('AddEntityInteraction', api.addEntityInteraction)
 ---@return number : The id of the interaction
 -- Add an interaction point on a networked entity's bone
 function api.addEntityBoneInteraction(data)
-    local id = #interactions + 1
-    interactions[id] = {
-        id = id,
-        entity = data.entity,
-        bone = data.bone,
-        distance = data.distance or 10.0,
-        interactDst = data.interactDst or 1.0,
-        options = data.options or {},
-        groups = data.groups or nil,
-    }
+
+    if not data.entity then
+        log:error('Entity is required to add an interaction')
+        return
+    end
+
+    if not data.bone then
+        log:error('Bone is required to add an interaction')
+        return
+    end
+
+    if not data.options then
+        log:error('Options are required to add an interaction')
+        return
+    end
+
+    -- temp workaround until table refactoring.
+    local key = string.format('%s:%s', data.entity, data.bone)
+    if not ENTITY_BONES[key] then
+        log:debug('Added new entity bone interaction: %s', key)
+        ENTITY_BONES[key] = {
+            entity = data.entity,
+            bone = data.bone,
+            distance = data.distance or 10.0,
+            interactDst = data.interactDst or 1.0,
+            offset = data.offset or vec(0.0, 0.0, 0.0),
+            options = data.options,
+            groups = data.groups or nil,
+        }
+    else
+        log:debug('Updating %s in bone interactions', key)
+
+        for index, option in pairs(data.options) do
+            if option.name and NETWORKED_ENTITIES[netId].options[index]?.name == option.name then
+                log:debug('Option with name: ( %s ) already exists, updating', option.name)
+                ENTITY_BONES[key].options[index] = option
+            else
+                ENTITY_BONES[key].options[#ENTITY_BONES[key].options + 1] = option
+            end
+        end
+
+        -- Update the distance and interactDst if the new data is greater
+        if data.distance > ENTITY_BONES[key].distance then
+            ENTITY_BONES[key].distance = data.distance
+        end
+
+        if data.interactDst > ENTITY_BONES[key].interactDst then
+            ENTITY_BONES[key].interactDst = data.interactDst
+        end
+
+        -- Update the offset if there is new data
+        if data.offset then
+            ENTITY_BONES[key].offset = data.offset
+        end
+
+        log:debug('Updated entity bone interaction: %s', key)
+        ENTITY_BONES[key] = {
+            entity = data.entity,
+            bone = data.bone,
+            options = ENTITY_BONES[key].options,
+            distance = ENTITY_BONES[key].distance,
+            interactDst = ENTITY_BONES[key].interactDst,
+            offset = ENTITY_BONES[key].offset,
+            resource = GetInvokingResource()
+        }
+    end
 
     filterInteractions()
 
@@ -416,7 +474,39 @@ function api.getNearbyInteractions()
 
     local playercoords = GetEntityCoords(cache.ped)
 
-    local nearbyObjects = lib.getNearbyObjects(playercoords, nearbyObjectDistance)
+    -- Temp loop : these checks need to be broken out into their own threads.
+    local nearbyVehicles = lib.getNearbyVehicles(playercoords, settings.nearbyVehicleDistance, false)
+    for i = 1, #nearbyVehicles do
+        local vehicle = nearbyVehicles[i].vehicle
+        local vehicleCoords = nearbyVehicles[i].coords
+
+        if settings.vehicleBoneDefaults.enabled then
+            for bone, data in pairs(settings.vehicleBoneDefaults.bones) do
+                local key = string.format('%s:%s', vehicle, bone)
+                if not ENTITY_BONES[key] then
+                    api.addEntityBoneInteraction({
+                        entity = vehicle,
+                        bone = bone,
+                        options = data.options,
+                        distance = data.distance,
+                        interactDst = data.interactDst,
+                        offset = data.offset,
+                    })
+                end
+            end
+        end
+    end
+
+    for _, interaction in pairs(ENTITY_BONES) do
+        local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
+        if distance <= interaction.distance then
+            amount += 1
+            interaction.curDist = distance
+            options[amount] = interaction
+        end
+    end
+
+    local nearbyObjects = lib.getNearbyObjects(playercoords, settings.nearbyObjectDistance)
     for i = 1, #nearbyObjects do
         local nearby = nearbyObjects[i]
         local hash = GetEntityModel(nearby.object)

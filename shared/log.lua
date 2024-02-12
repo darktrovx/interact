@@ -1,4 +1,4 @@
-local settings = require('shared/settings')
+local settings = 'shared.settings'
 
 return {
     debug = function(self, message, ...)

@@ -24,4 +24,27 @@ return {
 
     -- Nearby object distance check.
     nearbyObjectDistance = 20.0, -- Keep it at 15.0 at minimum.
+    nearbyVehicleDistance = 4.0,
+
+    vehicleBoneDefaults = {
+        enabled = true,
+        bones = {
+            ['boot'] = {
+                distance = 3.0,
+                interactDst = 1.5,
+                offset = vec3(0.0, 1.0, 0.0),
+                options = {
+                    {
+                        name = 'interact:trunk',
+                        label = 'Trunk',
+                        action = function(entity)
+                            print('Trunk')
+                        end
+                    }
+                }
+
+            }
+        }
+
+    },
 }
