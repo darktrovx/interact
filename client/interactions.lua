@@ -1,3 +1,4 @@
+local resource_name = GetCurrentResourceName()
 local log = require 'shared.log'
 local utils = require 'client.utils'
 local nearbyObjectDistance = require 'shared.settings'.nearbyObjectDistance
@@ -15,7 +16,8 @@ AddEventHandler('interactions:groupsChanged', function(newgroups)
     -- Use this event handler to loop through all current interactions and remove any that are not in the new groups that way we limit the amount of iterations needed
 end)
 
-local function checkParams(entity, options, data)
+---@param entity number : The entity to add an interaction to
+local function checkEntity(entity)
     if not entity then
         log:error('Entity is required to add an interaction')
         return
@@ -31,12 +33,28 @@ local function checkParams(entity, options, data)
         end
     end
 
-    if not options then
-        log:error('Options are required to add an interaction')
-        return
-    end
-
     return true
+end
+
+---@param coords vector3|table : The coords to add the interaction to
+local function formatCoords(coords)
+    local _type = type(coords)
+
+    if not coords then
+        log:error('Coords are required to add an interaction')
+        return
+    else
+        if _type == 'vector4' then
+            return coords.xyz
+        elseif _type == 'table' then
+            return vec(coords.x, coords.y, coords.z)
+        elseif _type == 'vector3' then
+            return coords
+        else
+            log:error('Coords must be a vector3 or a table')
+            return
+        end
+    end
 end
 
 --#TODO: Add a way to filter interactions based on the players group
@@ -106,29 +124,32 @@ local function addModel(model, options, data)
 end
 
 ---@param data table : { name, coords, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return number|nil : The id of the interaction
 -- Add an interaction point at a set of coords
 function api.addInteraction(data)
-    if not data.coords then
-        log:error('Coords are required to add an interaction')
-        return
-    end
+    data.coords = formatCoords(data.coords)
+    if not data.coords then return end
 
     if not data.options then
         log:error('Options are required to add an interaction')
         return
     end
 
+    if type(data.options) ~= 'table' then
+        log:error('Options must be a table')
+        return
+    end
+
     local id = #interactions + 1
     interactions[id] = {
         id = id,
-        name = data.name or 'interaction:'..id,
+        name = data.name or ('interaction:%s'):format(id),
         coords = data.coords,
         options = data.options or {},
         distance = data.distance or 10.0,
         interactDst = data.interactDst or 1.0,
         groups = data.groups or nil,
-        resource = GetInvokingResource()
+        resource = GetInvokingResource() or resource_name
     }
 
     filterInteractions()
@@ -137,11 +158,11 @@ function api.addInteraction(data)
 end exports('AddInteraction', api.addInteraction)
 
 ---@param data table : { name, entity, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return number|nil : The id of the interaction
 -- Add an interaction point on a local (client side) entity
 function api.addLocalEntityInteraction(data)
     local entity = data.entity
-    if not checkParams(entity, data.options) then
+    if not checkEntity(entity) then
         if ENTITIES[entity] then
             ENTITIES[entity] = nil
         end
@@ -154,7 +175,7 @@ function api.addLocalEntityInteraction(data)
         local id = #interactions + 1
         interactions[id] = {
             id = id,
-            name = data.name or 'interaction:'..id,
+            name = data.name or ('interaction:%s'):format(id),
             entity = entity,
             options = data.options or {},
             distance = data.distance or 8.0,
@@ -172,7 +193,7 @@ function api.addLocalEntityInteraction(data)
 
     -- If the entity is already registered, update it
     log:debug('Updating entity %s in interactions', entity)
-    for index, option in pairs(options) do
+    for index, option in pairs(data.options) do
         if option.name and ENTITIES[entity].options[index]?.name == option.name then
             log:debug('Option with name: ( %s ) already exists, updating', option.name)
             ENTITIES[entity].options[index] = option
@@ -195,6 +216,8 @@ function api.addLocalEntityInteraction(data)
         ENTITIES[entity].offset = data.offset
     end
 
+    local id = ENTITIES[entity]
+
     interactions[id] = {
         id = id,
         entity = entity,
@@ -211,10 +234,11 @@ function api.addLocalEntityInteraction(data)
 end exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
 
 ---@param data table : { name, netId, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return number|nil : The id of the interaction
 -- Add an interaction point on a networked entity
 function api.addEntityInteraction(data)
     local netId = data.netId
+
     -- If the netId does not exist, we assume it is an entity
     local entity
     if type(netId) == 'number' and not NetworkDoesNetworkIdExist(netId) then
@@ -222,17 +246,26 @@ function api.addEntityInteraction(data)
         netId = utils.getEntity(netId)
     end
 
-    if not checkParams(entity, options, data) then
-        if NETWORKED_ENTITIES[netId] then
-            NETWORKED_ENTITIES[netId] = nil
-        end
+    if not netId then
+        log:error('NetID is required to add an interaction')
+        return
+    end
+
+    if not data.options then
+        log:error('Options are required to add an interaction')
+        return
+    end
+
+    if type(data.options) ~= 'table' then
+        log:error('Options must be a table')
         return
     end
 
     -- If the entity is not networked, add it as a local entity
     if not NetworkGetEntityIsNetworked(entity) then
         log:debug('Entity %s is not networked, adding as a local entity', entity)
-        return api.addLocalEntityInteraction(entity, options, data)
+        data.entity = entity
+        return api.addLocalEntityInteraction(data)
     end
 
     -- If then netId not registered yet, add it
@@ -242,9 +275,9 @@ function api.addEntityInteraction(data)
         local id = #interactions + 1
         interactions[id] = {
             id = id,
-            name = data.name or 'interaction:'..id,
+            name = data.name or ('interaction:%s'):format(id),
             entity = entity,
-            options = options or {},
+            options = data.options or {},
             distance = data.distance or 10.0,
             interactDst = data.interactDst or 1.0,
             offset = data.offset or vec(0.0, 0.0, 0.0),
@@ -260,7 +293,7 @@ function api.addEntityInteraction(data)
 
     -- If the networkID is already registered, update it
     log:debug('Updating networkID %s in interactions', netId)
-    for index, option in pairs(options) do
+    for index, option in pairs(data.options) do
         if option.name and NETWORKED_ENTITIES[netId].options[index]?.name == option.name then
             log:debug('Option with name: ( %s ) already exists, updating', option.name)
             NETWORKED_ENTITIES[netId].options[index] = option
@@ -282,6 +315,8 @@ function api.addEntityInteraction(data)
     if data.offset then
         NETWORKED_ENTITIES[netId].offset = data.offset
     end
+
+    local id = NETWORKED_ENTITIES[netId].id
 
     interactions[id] = {
         id = id,
