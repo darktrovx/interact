@@ -148,11 +148,11 @@ function api.addLocalEntityInteraction(data)
         end
         return
     end
-
+    local id = #interactions + 1
     -- If then entity not registered yet, add it
     if not ENTITIES[entity] then
         log:debug('Adding entity %s to interactions', entity)
-        local id = #interactions + 1
+        
         interactions[id] = {
             id = id,
             name = data.name or 'interaction:'..id,
@@ -236,12 +236,12 @@ function api.addEntityInteraction(data)
         data.entity = entity
         return api.addLocalEntityInteraction(data)
     end
-
+    local id = #interactions + 1
     -- If then netId not registered yet, add it
     if not NETWORKED_ENTITIES[netId] then
         log:debug('Adding networkID %s to interactions', netId)
 
-        local id = #interactions + 1
+        
         interactions[id] = {
             id = id,
             name = data.name or 'interaction:'..id,
