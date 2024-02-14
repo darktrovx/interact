@@ -585,7 +585,7 @@ AddEventHandler('onClientResourceStop', function(resource)
         local interaction = interactions[i]
 
         if interaction.resource == resource then
-            api.removeInteraction(i)
+            api.removeInteraction(interaction.id)
         end
     end
 end)
