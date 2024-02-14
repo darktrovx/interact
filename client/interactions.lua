@@ -397,10 +397,13 @@ end exports('AddModelInteraction', api.addModelInteraction)
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 function api.removeInteraction(id)
-    if interactions[id] then
-        interactions[id] = nil
-        log:debug('Removed interaction %s', id)
-        filterInteractions()
+    for k, v in pairs(interactions) do
+        if v.id == id then
+            table.remove(interactions, k)
+            log:debug('Removed interaction %s', id)
+            filterInteractions()
+            return
+        end
     end
 end exports('RemoveInteraction', api.removeInteraction)
 
