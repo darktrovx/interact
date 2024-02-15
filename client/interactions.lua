@@ -46,16 +46,9 @@ local function filterInteractions()
 
     local newInteractions = {}
     local amount = 0
-
-    for i = 1, #interactions do
-        local interaction = interactions[i]
-
-        if interaction.groups then
-
-        end
-
+    for k ,v in pairs(interactions) do
         amount += 1
-        newInteractions[amount] = interaction
+        newInteractions[amount] = v
     end
 
     filteredInteractions = newInteractions
@@ -397,15 +390,11 @@ end exports('AddModelInteraction', api.addModelInteraction)
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 function api.removeInteraction(id)
-    for k, v in pairs(interactions) do
-        if v.id == id then
-            table.remove(interactions, k)
-            log:debug('Removed interaction %s', id)
-            filterInteractions()
-            return
-        end
-    end
-end exports('RemoveInteraction', api.removeInteraction)
+    interactions[id] = nil
+    log:debug('Removed interaction %s', id)
+    filterInteractions()
+end 
+exports('RemoveInteraction', api.removeInteraction)
 
 ---@param entity number : The entity to remove the interaction from
 -- Remove an interaction point by entity.
