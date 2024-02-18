@@ -3,42 +3,98 @@ local utils = require 'client.utils'
 local settings = require 'shared.settings'
 local interactions, filteredInteractions = {}, {}
 local table_sort = table.sort
+local table_type = table.type
 
 -- CACHE.
 local MODELS = {}
 local ENTITIES = {}
 local ENTITY_BONES = {}
 local NETWORKED_ENTITIES = {}
-
 local api = {}
+
+
+-- Used for backwards compatibility, to ensure we return the ID of the interaction
+local function generateUUID()
+    return ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'):gsub('[xy]', function(c)
+        local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
+        return string.format('%x', v)
+    end)
+end
+
 
 AddEventHandler('interactions:groupsChanged', function(newgroups)
     -- Use this event handler to loop through all current interactions and remove any that are not in the new groups that way we limit the amount of iterations needed
 end)
 
-local function checkParams(entity, options)
-    if not entity then
-        log:error('Entity is required to add an interaction')
-        return
+local function veryEntityInteraction(interaction)
+
+    if not interaction then
+        return log:error('Interaction does not exist')
+    end
+
+    if not interaction.entity then
+        return log:error('Entity is required to add an interaction')
     else
-        if type(entity) ~= 'number' then
-            log:error('Entity must be a number')
-            return
+        if type(interaction.entity) ~= 'number' then
+            return log:error('Entity must be a number')
         end
 
-        if not DoesEntityExist(entity) then
-            log:error('Entity %s does not exist', entity)
-            return
+        if not DoesEntityExist(interaction.entity) then
+            return log:error('Entity %s does not exist', interaction.entity)
         end
     end
 
-    if not options then
-        log:error('Options are required to add an interaction')
-        return
+    if not interaction.options then
+        return log:error('Options are required to add an interaction')
+    end
+
+    -- makes it so you can send a singular object instead of an array
+    if table_type(interaction.options) ~= 'array' then
+        interaction.options = { interaction.options }
+    end
+
+    -- Translates types of groups into a key value pair for easier checking
+    if interaction.groups then
+        if type(interaction.groups) == 'string' then
+            interaction.groups = { [interaction.groups] = 0, }
+        elseif table_type(interaction.groups) == 'array' then
+            for i = 1, #interaction.groups do
+                interaction.groups[interaction.groups[i]] = 0
+            end
+        end
     end
 
     return true
 end
+
+local function verifyInteraction(interaction)
+    if not interaction then
+        return log:error('Interaction does not exist')
+    end
+
+    if not interaction.options then
+        return log:error('Error, interactions must have options!')
+    end
+
+    -- makes it so you can send a singular object instead of an array
+    if table_type(interaction.options) ~= 'array' then
+        interaction.options = { interaction.options }
+    end
+
+    -- Translates types of groups into a key value pair for easier checking
+    if interaction.groups then
+        if type(interaction.groups) == 'string' then
+            interaction.groups = { [interaction.groups] = 0, }
+        elseif table_type(interaction.groups) == 'array' then
+            for i = 1, #interaction.groups do
+                interaction.groups[interaction.groups[i]] = 0
+            end
+        end
+    end
+
+    return true
+end
+
 
 --#TODO: Add a way to filter interactions based on the players group
 local function filterInteractions()
@@ -73,6 +129,7 @@ local function addModel(model, options, data)
             model = model,
             offset = data.offset,
             options = options,
+            width = data.width or utils.getOptionsWidth(options),
             distance = data.distance,
             interactDst = data.interactDst,
             resource = data.resource,
@@ -100,28 +157,23 @@ local function addModel(model, options, data)
 end
 
 ---@param data table : { name, coords, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return string | nil : The id of the interaction
 -- Add an interaction point at a set of coords
 function api.addInteraction(data)
-    if not data.coords then
-        log:error('Coords are required to add an interaction')
+    if not verifyInteraction(data) then
         return
     end
 
-    if not data.options then
-        log:error('Options are required to add an interaction')
-        return
-    end
-
-    local id = #interactions + 1
-    interactions[id] = {
+    local id = data.id or generateUUID()
+    interactions[#interactions + 1] = {
         id = id,
-        name = data.name or 'interaction:'..id,
+        name = data.name or ('interaction:%s'):format(id),
         coords = data.coords,
-        options = data.options or {},
+        width = utils.getOptionsWidth(data.options),
+        options = data.options,
         distance = data.distance or 10.0,
         interactDst = data.interactDst or 1.0,
-        groups = data.groups or nil,
+        groups = data.groups,
         resource = GetInvokingResource()
     }
 
@@ -131,26 +183,32 @@ function api.addInteraction(data)
 end exports('AddInteraction', api.addInteraction)
 
 ---@param data table : { name, entity, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return string | nil : The id of the interaction
 -- Add an interaction point on a local (client side) entity
 function api.addLocalEntityInteraction(data)
     local entity = data.entity
-    if not checkParams(entity, data.options) then
+    if not veryEntityInteraction(data) then
         if ENTITIES[entity] then
             ENTITIES[entity] = nil
         end
         return
     end
-    local id = #interactions + 1
+
+
+
     -- If then entity not registered yet, add it
     if not ENTITIES[entity] then
         log:debug('Adding entity %s to interactions', entity)
-        
-        interactions[id] = {
+
+        local id = data.id or generateUUID()
+
+        local options = data.options or {}
+        interactions[#interactions + 1] = {
             id = id,
-            name = data.name or 'interaction:'..id,
+            name = data.name or ('interaction:%s'):format(id),
             entity = entity,
-            options = data.options or {},
+            width = utils.getOptionsWidth(options),
+            options = options,
             distance = data.distance or 8.0,
             interactDst = data.interactDst or 1.0,
             offset = data.offset or vec(0.0, 0.0, 0.0),
@@ -189,10 +247,13 @@ function api.addLocalEntityInteraction(data)
         ENTITIES[entity].offset = data.offset
     end
 
-    interactions[id] = {
+    local id = data.id or generateUUID()
+
+    interactions[#interactions + 1] = {
         id = id,
         entity = entity,
         options = ENTITIES[entity].options,
+        width = utils.getOptionsWidth(ENTITIES[entity].options),
         distance = ENTITIES[entity].distance,
         interactDst = ENTITIES[entity].interactDst,
         offset = ENTITIES[entity].offset,
@@ -205,7 +266,7 @@ function api.addLocalEntityInteraction(data)
 end exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
 
 ---@param data table : { name, netId, options, distance, interactDst, groups }
----@return number : The id of the interaction
+---@return string | nil : The id of the interaction
 -- Add an interaction point on a networked entity
 function api.addEntityInteraction(data)
     local netId = data.netId
@@ -216,10 +277,11 @@ function api.addEntityInteraction(data)
         netId = utils.getEntity(netId)
     end
 
-    if not checkParams(entity, data.options) then
+    if not veryEntityInteraction(data) then
         if NETWORKED_ENTITIES[netId] then
             NETWORKED_ENTITIES[netId] = nil
         end
+
         return
     end
 
@@ -229,17 +291,20 @@ function api.addEntityInteraction(data)
         data.entity = entity
         return api.addLocalEntityInteraction(data)
     end
-    local id = #interactions + 1
+
     -- If then netId not registered yet, add it
     if not NETWORKED_ENTITIES[netId] then
         log:debug('Adding networkID %s to interactions', netId)
 
-        
-        interactions[id] = {
+        local id = data.id or generateUUID()
+
+        local options = data.options or {}
+        interactions[#interactions + 1] = {
             id = id,
-            name = data.name or 'interaction:'..id,
+            name = data.name or ('interaction:%s'):format(id),
             entity = entity,
-            options = data.options or {},
+            width = utils.getOptionsWidth(options),
+            options = options,
             distance = data.distance or 10.0,
             interactDst = data.interactDst or 1.0,
             offset = data.offset or vec(0.0, 0.0, 0.0),
@@ -255,10 +320,13 @@ function api.addEntityInteraction(data)
 
     -- If the networkID is already registered, update it
     log:debug('Updating networkID %s in interactions', netId)
-    for index, option in pairs(data.options) do
-        if option.name and NETWORKED_ENTITIES[netId].options[index]?.name == option.name then
+
+    for i = 1, #data.options do
+        local option = data.options[i]
+
+        if option.name and NETWORKED_ENTITIES[netId].options[i]?.name == option.name then
             log:debug('Option with name: ( %s ) already exists, updating', option.name)
-            NETWORKED_ENTITIES[netId].options[index] = option
+            NETWORKED_ENTITIES[netId].options[i] = option
         else
             NETWORKED_ENTITIES[netId].options[#NETWORKED_ENTITIES[netId].options + 1] = option
         end
@@ -278,10 +346,13 @@ function api.addEntityInteraction(data)
         NETWORKED_ENTITIES[netId].offset = data.offset
     end
 
-    interactions[id] = {
+
+    local id = data.id or generateUUID()
+    interactions[#interactions+1] = {
         id = id,
         entity = entity,
         options = NETWORKED_ENTITIES[netId].options,
+        width = utils.getOptionsWidth(NETWORKED_ENTITIES[netId].options),
         distance = NETWORKED_ENTITIES[netId].distance,
         interactDst = NETWORKED_ENTITIES[netId].interactDst,
         offset = NETWORKED_ENTITIES[netId].offset,
@@ -300,17 +371,17 @@ function api.addEntityBoneInteraction(data)
 
     if not data.entity then
         log:error('Entity is required to add an interaction')
-        return
+        return 0
     end
 
     if not data.bone then
         log:error('Bone is required to add an interaction')
-        return
+        return 0
     end
 
     if not data.options then
         log:error('Options are required to add an interaction')
-        return
+        return 0
     end
 
     -- temp workaround until table refactoring.
@@ -324,6 +395,7 @@ function api.addEntityBoneInteraction(data)
             interactDst = data.interactDst or 1.0,
             offset = data.offset or vec(0.0, 0.0, 0.0),
             options = data.options,
+            width = utils.getOptionsWidth(data.options),
             groups = data.groups or nil,
         }
     else
@@ -357,6 +429,7 @@ function api.addEntityBoneInteraction(data)
             entity = data.entity,
             bone = data.bone,
             options = ENTITY_BONES[key].options,
+            width = utils.getOptionsWidth(ENTITY_BONES[key].options),
             distance = ENTITY_BONES[key].distance,
             interactDst = ENTITY_BONES[key].interactDst,
             offset = ENTITY_BONES[key].offset,
@@ -387,24 +460,45 @@ function api.addModelInteraction(data)
     end
 end exports('AddModelInteraction', api.addModelInteraction)
 
+local function getInteractionFromId(id)
+    for i = 1, #interactions do
+        local interaction = interactions[i]
+
+        if interaction.id == id then
+            return i
+        end
+    end
+end
+
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 function api.removeInteraction(id)
-    interactions[id] = nil
-    log:debug('Removed interaction %s', id)
-    filterInteractions()
-end 
+    local index = getInteractionFromId(id)
+
+    if index then
+        table.remove(interactions, index)
+
+        log:debug('Removed interaction %s', id)
+        filterInteractions()
+    end
+end
 exports('RemoveInteraction', api.removeInteraction)
 
 ---@param entity number : The entity to remove the interaction from
 -- Remove an interaction point by entity.
 function api.removeInteractionByEntity(entity)
+    local changed = false
     for i = #interactions, 1, -1 do
         local interaction = interactions[i]
 
         if interaction.entity == entity then
-            api.removeInteraction(i)
+            table.remove(interactions, i)
+            changed = true
         end
+    end
+
+    if changed then
+        filterInteractions()
     end
 end exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
 
@@ -412,22 +506,15 @@ end exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
 ---@param name? string : The name of the option to remove
 -- Remove an option from an interaction point by id.
 function api.removeInteractionOption(id, name)
-    if not interactions[id] then
-        log:error('Interaction with id: ( %s ) does not exist', id)
-        return
-    end
-
     if not name then
-        api.removeInteraction(id)
-        return
+        return api.removeInteraction(id)
     end
 
-    local options = interactions[id].options
+    local options = interactions?[id]?.options
 
     if not options then
         log:error('Interaction with id: ( %s ) does not have any options', id)
-        api.removeInteraction(id)
-        return
+        return api.removeInteraction(id)
     end
 
     for i = #options, 1, -1 do
@@ -445,20 +532,41 @@ end exports('RemoveInteractionOption', api.removeInteractionOption)
 -- Update an interaction point by id.
 function api.updateInteraction(id, options)
     if not options then
-        log:error('Options are required to update an interaction')
-        return
+        return log:error('Options are required to update an interaction')
     end
 
     if not interactions[id] then
-        log:error('Interaction with id: ( %s ) does not exist', id)
-        return
+        return log:error('Interaction with id: ( %s ) does not exist', id)
     end
 
     if interactions[id] then
+        options = table_type(options) == 'array' and options or { options }
         interactions[id].options = options
         filterInteractions()
     end
 end exports('UpdateInteraction', api.updateInteraction)
+
+local function canInteract(option)
+    return not option.canInteract or option.canInteract()
+end
+
+local function getInteractionOptions(options)
+    local currentOptions = {}
+    local added = 0
+    local amount = #options
+
+    if amount > 0 then
+        for j = 1, amount do
+            local option = options[j]
+            if canInteract(option) then
+                added += 1
+                currentOptions[added] = option
+            end
+        end
+    end
+
+    return currentOptions, added
+end
 
 function api.getNearbyInteractions()
     local options = {}
@@ -480,6 +588,7 @@ function api.getNearbyInteractions()
                         entity = vehicle,
                         bone = bone,
                         options = data.options,
+                        width = data.width or utils.getOptionsWidth(data.options),
                         distance = data.distance,
                         interactDst = data.interactDst,
                         offset = data.offset,
@@ -504,6 +613,7 @@ function api.getNearbyInteractions()
         local hash = GetEntityModel(nearby.object)
 
         if MODELS[hash] then
+
             local interaction = lib.table.deepclone(MODELS[hash])
             -- put the functions to original references
             for k, v in pairs(interaction) do
@@ -535,16 +645,22 @@ function api.getNearbyInteractions()
     local amountOfInteractions = #filteredInteractions
     if amountOfInteractions > 0 then
         for i = 1, amountOfInteractions do
+
             local interaction = filteredInteractions[i]
-
             local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
-
             local distance = #(coords - playercoords)
 
+
             if distance <= interaction.distance then
-                amount += 1
-                interaction.curDist = distance
-                options[amount] = interaction
+                local interactOptions, interactionAmount = getInteractionOptions(interaction.options)
+                if interactionAmount > 0 then
+                    local interactTable = interaction
+                    interactTable.options = interactOptions
+                    interactTable.curDist = distance
+
+                    amount += 1
+                    options[amount] = interactTable
+                end
             end
         end
     end
@@ -562,7 +678,7 @@ function api.getNearbyInteractions()
         end)
     end
 
-    return options
+    return options, amount
 end
 
 function api.disable(state)

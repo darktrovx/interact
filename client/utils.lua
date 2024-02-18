@@ -42,13 +42,18 @@ function utils.getOptionsWidth(options)
         log:error('This function is not available on server side')
         return
     end
-    local width = 0.0
-    for _, data in pairs(options) do
-        local factor = (string.len(data.label)) / 370
-        local newWidth = 0.03 + factor
 
-        if newWidth > width then
-            width = newWidth
+    local width = 0.0
+
+    if options and table.type(options) == 'array' then
+        for i = 1, #options do
+            local data = options[i]
+            local factor = (string.len(data.label)) / 370
+            local newWidth = 0.03 + factor
+
+            if newWidth > width then
+                width = newWidth
+            end
         end
     end
 
@@ -72,6 +77,7 @@ function utils.getCoordsFromInteract(interaction)
                     if interaction.offset and interaction.offset ~= vec3(0.0, 0.0, 0.0) then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
+
                     return GetEntityCoords(interaction.entity)
                 end
             end
