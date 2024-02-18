@@ -515,8 +515,12 @@ function api.getNearbyInteractions()
                         if MODELS[hash].options[id].canInteract then
                             item.canInteract = MODELS[hash].options[id].canInteract
                         end
-                        if item.canInteract and not item.canInteract() then
-                            v[id] = nil
+                        if item.canInteract then
+                            local canInteract = false
+                            pcall(function()
+                                canInteract = item.canInteract(nearby.object, nearby.coords, item.args)
+                            end)
+                            v[id] = canInteract and item or nil
                         end
                     end
                 end

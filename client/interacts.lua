@@ -82,7 +82,7 @@ local function CreateInteractions()
                     if IsControlJustPressed(0, 38) then
                         local option = options[CURRENT_SELECTION]
                         if option.action then
-                            option.action(interaction.entity, interaction.coords, option.args)
+                            pcall(function() option.action(interaction.entity, interaction.coords, option.args) end) 
                         elseif option.serverEvent then
                             TriggerServerEvent(option.serverEvent, option.args)
                         elseif option.event then
