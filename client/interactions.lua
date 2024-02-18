@@ -546,19 +546,19 @@ function api.updateInteraction(id, options)
     end
 end exports('UpdateInteraction', api.updateInteraction)
 
-local function canInteract(option)
-    return not option.canInteract or option.canInteract()
+local function canInteract(option, interaction)
+    return not option.canInteract or option.canInteract(interaction.entity, interaction.coords, interaction.args)
 end
 
-local function getInteractionOptions(options)
+local function getInteractionOptions(interaction)
     local currentOptions = {}
     local added = 0
-    local amount = #options
+    local amount = #interaction.options
 
     if amount > 0 then
         for j = 1, amount do
-            local option = options[j]
-            if canInteract(option) then
+            local option = interaction.options[j]
+            if canInteract(option, interaction) then
                 added += 1
                 currentOptions[added] = option
             end
@@ -625,6 +625,7 @@ function api.getNearbyInteractions()
                         if MODELS[hash].options[id].canInteract then
                             item.canInteract = MODELS[hash].options[id].canInteract
                         end
+
                         if item.canInteract and not item.canInteract() then
                             v[id] = nil
                         end
@@ -652,7 +653,7 @@ function api.getNearbyInteractions()
 
 
             if distance <= interaction.distance then
-                local interactOptions, interactionAmount = getInteractionOptions(interaction.options)
+                local interactOptions, interactionAmount = getInteractionOptions(interaction)
                 if interactionAmount > 0 then
                     local interactTable = interaction
                     interactTable.options = interactOptions
@@ -665,13 +666,16 @@ function api.getNearbyInteractions()
         end
     end
 
-    for _, v in pairs(options) do
-        for i = 1, #v.options, 1 do
-            if not v.options[i] then
-                table.remove(v.options, i)
+    --[[ This will more than likely break the interacitons, we need to validate this the way I've done it inside of the amountOfInteractions loop
+        for _, v in pairs(options) do
+            for i = 1, #v.options, 1 do
+                if not v.options[i] then
+                    table.remove(v.options, i)
+                end
             end
         end
-    end
+    --]]
+
     if amount > 1 then
         table_sort(options, function(a, b)
             return a.curDist < b.curDist
