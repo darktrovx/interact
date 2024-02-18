@@ -1,6 +1,11 @@
 local log = require 'shared.log'
 local utils = require 'client.utils'
-local settings = require 'shared.settings'
+local settings = require 'shared.settings'.vehicleBoneDefaults
+
+
+local entities = require 'client.entities'
+
+
 local interactions, filteredInteractions = {}, {}
 local table_sort = table.sort
 local table_type = table.type
@@ -568,21 +573,16 @@ local function getInteractionOptions(interaction)
     return currentOptions, added
 end
 
-function api.getNearbyInteractions()
-    local options = {}
-    local amount = 0
+local function addDefaultVehicle()
+    local amount, nearbyVehicles = entities.getEntitiesByType('vehicle')
 
-    local playercoords = GetEntityCoords(cache.ped)
+    if amount > 0 then
+        for i = 1, amount do
+            local vehicle = nearbyVehicles[i]
 
-    -- Temp loop : these checks need to be broken out into their own threads.
-    local nearbyVehicles = lib.getNearbyVehicles(playercoords, settings.nearbyVehicleDistance, false)
-    for i = 1, #nearbyVehicles do
-        local vehicle = nearbyVehicles[i].vehicle
-        local vehicleCoords = nearbyVehicles[i].coords
-
-        if settings.vehicleBoneDefaults.enabled then
-            for bone, data in pairs(settings.vehicleBoneDefaults.bones) do
+            for bone, data in pairs(settings.bones) do
                 local key = string.format('%s:%s', vehicle, bone)
+
                 if not ENTITY_BONES[key] then
                     api.addEntityBoneInteraction({
                         entity = vehicle,
@@ -597,48 +597,37 @@ function api.getNearbyInteractions()
             end
         end
     end
+end
+
+function api.getNearbyInteractions()
+    local options = {}
+    local amount = 0
+
+    local playercoords = GetEntityCoords(cache.ped)
+
+    if settings.enabled then
+        addDefaultVehicle()
+    end
 
     for _, interaction in pairs(ENTITY_BONES) do
         local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
         if distance <= interaction.distance then
-            amount += 1
-            interaction.curDist = distance
-            options[amount] = interaction
-        end
-    end
 
-    local nearbyObjects = lib.getNearbyObjects(playercoords, settings.nearbyObjectDistance)
-    for i = 1, #nearbyObjects do
-        local nearby = nearbyObjects[i]
-        local hash = GetEntityModel(nearby.object)
 
-        if MODELS[hash] then
+            local interactOptions, interactionAmount = getInteractionOptions(interaction)
 
-            local interaction = lib.table.deepclone(MODELS[hash])
-            -- put the functions to original references
-            for k, v in pairs(interaction) do
-                if type(v) == "table" then
-                    for id, item in pairs(v) do
-                        if item.action then
-                            item.action = MODELS[hash].options[id].action
-                        end
-                        if MODELS[hash].options[id].canInteract then
-                            item.canInteract = MODELS[hash].options[id].canInteract
-                        end
-
-                        if item.canInteract and not item.canInteract() then
-                            v[id] = nil
-                        end
-                    end
-                end
-            end
-            local distance = #(nearby.coords - playercoords)
-            interaction.entity = nearby.object
-
-            if distance <= interaction.distance then
+            if interactionAmount > 0 then
                 amount += 1
-                interaction.curDist = distance
-                options[amount] = interaction
+                options[amount] = {
+                    id = interaction.id,
+                    entity = interaction.entity,
+                    bone = interaction.bone,
+                    options = interactOptions,
+                    curDist = distance,
+                    interactDst = interaction.interactDst,
+                    width = interaction.width,
+                    offset = interaction.offset,
+                }
             end
         end
     end
@@ -650,7 +639,6 @@ function api.getNearbyInteractions()
             local interaction = filteredInteractions[i]
             local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
             local distance = #(coords - playercoords)
-
 
             if distance <= interaction.distance then
                 local interactOptions, interactionAmount = getInteractionOptions(interaction)
@@ -668,16 +656,6 @@ function api.getNearbyInteractions()
             end
         end
     end
-
-    --[[ This will more than likely break the interacitons, we need to validate this the way I've done it inside of the amountOfInteractions loop
-        for _, v in pairs(options) do
-            for i = 1, #v.options, 1 do
-                if not v.options[i] then
-                    table.remove(v.options, i)
-                end
-            end
-        end
-    --]]
 
     if amount > 1 then
         table_sort(options, function(a, b)

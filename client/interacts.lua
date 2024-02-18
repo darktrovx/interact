@@ -120,7 +120,6 @@ end)
 
 -- Slow checker thread
 local threadTimer = GetConvarInt('interact_thread', 250)
-
 CreateThread(function()
     while true do
         nearby, nearbyAmount = interactions.getNearbyInteractions()

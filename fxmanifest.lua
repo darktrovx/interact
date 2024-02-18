@@ -11,6 +11,7 @@ repository 'https://github.com/darktrovx/interact'
 files {
     'client/interactions.lua',
     'client/utils.lua',
+    'client/entities.lua',
     'shared/settings.lua',
     'shared/log.lua',
     'assets/**/*.png'
