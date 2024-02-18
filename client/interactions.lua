@@ -26,11 +26,6 @@ local function generateUUID()
     end)
 end
 
-
-AddEventHandler('interactions:groupsChanged', function(newgroups)
-    -- Use this event handler to loop through all current interactions and remove any that are not in the new groups that way we limit the amount of iterations needed
-end)
-
 local function veryEntityInteraction(interaction)
 
     if not interaction then
@@ -100,20 +95,40 @@ local function verifyInteraction(interaction)
     return true
 end
 
+local bridge = require 'bridge.init'
 
---#TODO: Add a way to filter interactions based on the players group
-local function filterInteractions()
-    local myGroups = 'police'
+local function filterInteractions(groups)
+    local myGroups = groups or bridge and bridge.getPlayerGroup() or {}
 
     local newInteractions = {}
     local amount = 0
-    for k ,v in pairs(interactions) do
-        amount += 1
-        newInteractions[amount] = v
+
+    for i = 1, #interactions do
+        local interaction = interactions[i]
+
+        if not interaction.groups then
+            amount += 1
+            newInteractions[amount] = interaction
+        else
+            local valid = false
+            for group, grade in pairs(interaction.groups) do
+                if myGroups[group] and myGroups[group] >= grade then
+                    valid = true
+                    break
+                end
+            end
+
+            if valid then
+                amount += 1
+                newInteractions[amount] = interaction
+            end
+        end
     end
 
     filteredInteractions = newInteractions
 end
+
+AddEventHandler('interact:groupsChanged', filterInteractions)
 
 ---@param model number|string : The model to add the interaction to
 ---@param options table : { label, canInteract, action, event, serverEvent, args }

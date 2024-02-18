@@ -14,6 +14,8 @@ files {
     'client/entities.lua',
     'shared/settings.lua',
     'shared/log.lua',
+    'bridge/init.lua',
+    'bridge/**/client.lua',
     'assets/**/*.png'
 }
 

@@ -122,8 +122,12 @@ end)
 local threadTimer = GetConvarInt('interact_thread', 250)
 CreateThread(function()
     while true do
-        nearby, nearbyAmount = interactions.getNearbyInteractions()
         disableInteraction = isDisabled()
+        if disableInteraction then
+            nearby, nearbyAmount = table.wipe(nearby), 0
+        else
+            nearby, nearbyAmount = interactions.getNearbyInteractions()
+        end
         Wait(threadTimer)
     end
 end)
