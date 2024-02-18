@@ -1,5 +1,4 @@
-local settings = require 'shared.settings'
-local textures = settings.Textures
+local textures = require 'shared.settings'.Textures
 local log = require 'shared.log'
 
 local SetTextScale = SetTextScale
