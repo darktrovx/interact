@@ -1,10 +1,7 @@
 local log = require 'shared.log'
 local utils = require 'client.utils'
 local settings = require 'shared.settings'.vehicleBoneDefaults
-
-
 local entities = require 'client.entities'
-
 
 local interactions, filteredInteractions = {}, {}
 local table_sort = table.sort
@@ -17,6 +14,7 @@ local ENTITY_BONES = {}
 local NETWORKED_ENTITIES = {}
 local api = {}
 
+local myGroups = {}
 
 -- Used for backwards compatibility, to ensure we return the ID of the interaction
 local function generateUUID()
@@ -95,40 +93,49 @@ local function verifyInteraction(interaction)
     return true
 end
 
-local bridge = require 'bridge.init'
+local function hasGroup(groups)
+    local valid = false
 
-local function filterInteractions(groups)
-    local myGroups = groups or bridge and bridge.getPlayerGroup() or {}
+    if groups then
+        for group, grade in pairs(groups) do
+            if myGroups[group] and myGroups[group] >= grade then
+                valid = true
+                break
+            end
+        end
+    end
 
+    return valid
+end
+
+local function filterInteractions()
     local newInteractions = {}
     local amount = 0
 
     for i = 1, #interactions do
         local interaction = interactions[i]
 
-        if not interaction.groups then
-            amount += 1
-            newInteractions[amount] = interaction
-        else
-            local valid = false
-            for group, grade in pairs(interaction.groups) do
-                if myGroups[group] and myGroups[group] >= grade then
-                    valid = true
-                    break
-                end
-            end
+        if interaction.groups then
+            local valid = hasGroup(interaction.groups)
 
             if valid then
                 amount += 1
                 newInteractions[amount] = interaction
             end
+        else
+            amount += 1
+            newInteractions[amount] = interaction
         end
     end
 
     filteredInteractions = newInteractions
 end
 
-AddEventHandler('interact:groupsChanged', filterInteractions)
+AddEventHandler('interact:groupsChanged', function(groups)
+    myGroups = groups or {}
+
+    filterInteractions()
+end)
 
 ---@param model number|string : The model to add the interaction to
 ---@param options table : { label, canInteract, action, event, serverEvent, args }
@@ -197,7 +204,14 @@ function api.addInteraction(data)
         resource = GetInvokingResource()
     }
 
-    filterInteractions()
+    -- Only add the interaction if it does not have groups
+    if data.groups then
+        local valid = hasGroup(groups)
+
+        if valid then
+            filteredInteractions[#filteredInteractions + 1] = interactions[id]
+        end
+    end
 
     return id
 end exports('AddInteraction', api.addInteraction)
@@ -541,7 +555,7 @@ function api.removeInteractionOption(id, name)
         local option = options[i]
 
         if option.name == name then
-            options[i] = nil
+            table.remove(options, i)
             log:debug('Removed option %s from interaction %s', name, id)
         end
     end

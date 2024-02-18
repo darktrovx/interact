@@ -1,12 +1,6 @@
 local Player = {}
 local Loaded = false
 
-local Bridge = {}
-
-function Bridge.getPlayerGroup()
-    return Player and Player.Group or {}
-end
-
 RegisterNetEvent('esx:setPlayerData', function(key, value)
 	if not Loaded or GetInvokingResource() ~= 'es_extended' then return end
 
@@ -26,10 +20,13 @@ RegisterNetEvent('esx:playerLoaded',function(xPlayer)
     }
 
     Loaded = true
+
+    TriggerEvent('interact:groupsChanged', Player.Group)
 end)
 
 RegisterNetEvent('esx:onPlayerLogout', function()
     Player = table.wipe(Player)
+    TriggerEvent('interact:groupsChanged', {})
 end)
 
 return Bridge

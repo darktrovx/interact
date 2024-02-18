@@ -1,11 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
-
-local Bridge = {}
 local Player = {}
-
-function Bridge.getPlayerGroup()
-    return Player and Player.Group or {}
-end
 
 -- Group Updaters --
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
@@ -41,10 +35,11 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
 
     -- We only need QBCore to intiate the player data, after that we are safe to wipe it (Thanks for having 2mb of ram usage in your fucking export qbcore)
     table.wipe(QBCore)
+    TriggerEvent('interact:groupsChanged', Player.Group)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     Player = table.wipe(Player)
+    TriggerEvent('interact:groupsChanged', {})
 end)
 
-return Bridge

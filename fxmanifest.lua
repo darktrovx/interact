@@ -14,7 +14,6 @@ files {
     'client/entities.lua',
     'shared/settings.lua',
     'shared/log.lua',
-    'bridge/init.lua',
     'bridge/**/client.lua',
     'assets/**/*.png'
 }
@@ -25,6 +24,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'bridge/init.lua',
     'client/textures.lua',
     'client/interacts.lua',
     'client/raycast.lua'

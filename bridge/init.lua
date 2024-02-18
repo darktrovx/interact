@@ -16,4 +16,4 @@ end
 
 local resource = ('bridge.%s.client'):format(framework)
 
-return require (resource)
+require (resource)

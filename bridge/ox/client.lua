@@ -5,34 +5,33 @@ local chunk = assert(load(import, ('@@ox_core/%s'):format(file)))
 chunk()
 
 local Player = {}
-local Bridge = {}
-
-function Bridge.getPlayerGroup()
-    return Player and Player.group
-end
 
 RegisterNetEvent('ox:setGroup', function(name, grade)
     Player.group[name] = grade
 
-    TriggerEvent('interact:groupsChanged', Player.Group)
+    TriggerEvent('interact:groupsChanged', Player.group)
 end)
 
-AddEventHandler('ox:playerLoaded', function(data)
+AddEventHandler('ox:playerLoaded', function()
     Player = {
         group = Ox.GetPlayerData().groups
     }
+
+    TriggerEvent('interact:groupsChanged', Player.group)
 end)
 
 AddEventHandler('ox:playerLogout', function()
     table.wipe(Player)
+    TriggerEvent('interact:groupsChanged', {})
 end)
 
 AddEventHandler('onResourceStart', function(resource)
    if resource == GetCurrentResourceName() then
+        Wait(500)
         Player = {
             group = Ox.GetPlayerData().groups
         }
+
+        TriggerEvent('interact:groupsChanged', Player.group)
    end
 end)
-
-return Bridge
