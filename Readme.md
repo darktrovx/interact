@@ -53,6 +53,7 @@ exports.interact:AddInteraction({
     coords = vec3(0.0, 0.0, 0.0),
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
     name = 'interactionName', -- optional
     options = {
          {
@@ -67,6 +68,7 @@ exports.interact:AddInteraction({
 exports.interact:AddLocalEntityInteraction({
     entity = entityIdHere,
     name = 'interactionName', -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
     offset = vec3(0.0, 0.0, 0.0), -- optional
@@ -84,6 +86,7 @@ exports.interact:AddLocalEntityInteraction({
 exports.interact:AddInteractionEntity({
     netId = entityNetIdHere,
     name = 'interactionName', -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
     offset = vec3(0.0, 0.0, 0.0), -- optional
@@ -102,6 +105,7 @@ exports.interact:AddInteractionBone({
     entity = entityIdHere,
     bone = 'boneName',
     name = 'interactionName', -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
     offset = vec3(0.0, 0.0, 0.0), -- optional
@@ -122,6 +126,7 @@ exports.interact:AddModelInteraction({
         { model = 'modelNameHere2', offset = vec3(0.0, 0.0, 0.0) },
     },
     name = 'interactionName', -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
     options = {
@@ -143,4 +148,87 @@ exports.interact:RemoveInteraction(interactionID)
 -- Update an interaction point by id.
 exports.interact:UpdateInteraction(interactionID, options)
 
+```
+
+
+# Using the API
+```lua
+    -- Imports the API library, must use ox_lib require function.
+    local api = require '@interact.client.interactions'
+
+
+    api.addInteraction({
+        coords = vec3(0.0, 0.0, 0.0),
+        distance = 8.0, -- optional
+        interactDst = 1.0, -- optional
+        id = 'myCoolUniqueId', -- needed for removing interactions
+        name = 'interactionName', -- optional
+        options = {
+            {
+                label = 'Hello World!',
+                action = function(entity, coords, args)
+                    print(entity, coords, json.encode(args))
+                end,
+            },
+        }
+    })
+
+    api.addLocalEntityInteraction({
+        entity = entityIdHere,
+        name = 'interactionName', -- optional
+        id = 'myCoolUniqueId', -- needed for removing interactions
+        distance = 8.0, -- optional
+        interactDst = 1.0, -- optional
+        offset = vec3(0.0, 0.0, 0.0), -- optional
+        options = {
+            {
+                label = 'Hello World!',
+                action = function(entity, coords, args)
+                    print(entity, coords, json.encode(args))
+                end,
+            },
+        }
+    })
+
+    api.addModelInteraction({
+        modelData = {
+            { model = 'modelNameHere1', offset = vec3(0.0, 0.0, 0.0) },
+            { model = 'modelNameHere2', offset = vec3(0.0, 0.0, 0.0) },
+        },
+        name = 'interactionName', -- optional
+        id = 'myCoolUniqueId', -- needed for removing interactions
+        distance = 8.0, -- optional
+        interactDst = 1.0, -- optional
+        options = {
+            {
+                label = 'Hello World!',
+                action = function(entity, coords, args)
+                    print(entity, coords, json.encode(args))
+                end,
+            },
+        }
+    })
+
+    api.removeInteraction(interactionID)
+    api.updateInteraction(interactionID, options)
+
+
+    -- You can also import a singular api function such as:
+    local addInteraction = require '@interact.client.interactions'.addInteraction
+
+    addInteraction({
+        coords = vec3(0.0, 0.0, 0.0),
+        distance = 8.0, -- optional
+        interactDst = 1.0, -- optional
+        id = 'myCoolUniqueId', -- needed for removing interactions
+        name = 'interactionName', -- optional
+        options = {
+            {
+                label = 'Hello World!',
+                action = function(entity, coords, args)
+                    print(entity, coords, json.encode(args))
+                end,
+            },
+        }
+    })
 ```
