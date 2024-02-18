@@ -33,8 +33,6 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
         gang = PlayerData.gang.name,
     }
 
-    -- We only need QBCore to intiate the player data, after that we are safe to wipe it (Thanks for having 2mb of ram usage in your fucking export qbcore)
-    table.wipe(QBCore)
     TriggerEvent('interact:groupsChanged', Player.Group)
 end)
 
