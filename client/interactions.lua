@@ -655,12 +655,15 @@ function api.getNearbyInteractions()
             if distance <= interaction.distance then
                 local interactOptions, interactionAmount = getInteractionOptions(interaction)
                 if interactionAmount > 0 then
-                    local interactTable = interaction
-                    interactTable.options = interactOptions
-                    interactTable.curDist = distance
-
                     amount += 1
-                    options[amount] = interactTable
+                    options[amount] = {
+                        id = interaction.id,
+                        coords = coords,
+                        options = interactOptions,
+                        curDist = distance,
+                        interactDst = interaction.interactDst,
+                        width = interaction.width,
+                    }
                 end
             end
         end
