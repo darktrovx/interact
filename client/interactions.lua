@@ -71,7 +71,7 @@ local function hasGroup(groups)
 end
 
 local function filterEntityInteractions(newInteractions, data)
-    local amount = #data
+    local amount = #newInteractions
 
     for _, allInteraction in pairs(data) do
         for i = 1, #allInteraction do
@@ -86,15 +86,16 @@ local function filterEntityInteractions(newInteractions, data)
 end
 
 local function filterOtherInteractions(newInteractions, data)
-    local amount = #data
+    local indexAmount = #data
+    local interactionAmount = #newInteractions
 
-    if amount > 0 then
-        for i = 1, #data do
+    if indexAmount > 0 then
+        for i = 1, indexAmount do
             local interaction = data[i]
 
             if not interaction.groups or hasGroup(interaction.groups) then
-                amount += 1
-                newInteractions[amount] = interaction
+                interactionAmount += 1
+                newInteractions[interactionAmount] = interaction
             end
         end
     end
@@ -442,30 +443,23 @@ local function getReturnData(options, distance, interaction)
     }
 end
 
-local function getGloabalVehicleData(options, playercoords)
-    local globalVehicleAmount = #globalVehicleInteractions
+local function addGlobalVehicleData(interaction, options, playercoords)
+    local vehicleAmount, vehicles = entities.getEntitiesByType('vehicle')
 
-    if globalVehicleAmount > 0 then
+    if vehicleAmount > 0 then
         local amount = #options
-        local vehicleAmount, vehicles = entities.getEntitiesByType('vehicle')
 
-        if vehicleAmount > 0 then
-            for i = 1, globalVehicleAmount do
-                local interaction = globalVehicleInteractions[i]
+        for j = 1, vehicleAmount do
+            interaction.entity = vehicles[j]
 
-                for j = 1, vehicleAmount do
-                    interaction.entity = vehicles[j]
+            local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
 
-                    local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
+            if distance <= interaction.distance then
+                local interactOptions, interactionAmount = getInteractionOptions(interaction)
 
-                    if distance <= interaction.distance then
-                        local interactOptions, interactionAmount = getInteractionOptions(interaction)
-
-                        if interactionAmount > 0 then
-                            amount += 1
-                            options[amount] = getReturnData(interactOptions, distance, interaction)
-                        end
-                    end
+                if interactionAmount > 0 then
+                    amount += 1
+                    options[amount] = getReturnData(interactOptions, distance, interaction)
                 end
             end
         end
@@ -484,6 +478,13 @@ function api.getNearbyInteractions()
         for i = 1, amountOfInteractions do
             local interaction = filteredInteractions[i]
 
+            if interaction.global then
+                addGlobalVehicleData(interaction, options, playercoords)
+                amount = #options
+                goto skip
+            end
+
+
             -- Check if the interaction is a networked entity
             if interaction.netId then
                 local entity = entities.isNetIdNearby(interaction.netId)
@@ -491,6 +492,7 @@ function api.getNearbyInteractions()
                 if not entity then
                     goto skip
                 end
+
                 interaction.entity = entity
             elseif interaction.entity and not entities.isEntityNearby(interaction.entity) then
                 goto skip
@@ -510,10 +512,6 @@ function api.getNearbyInteractions()
             :: skip ::
         end
     end
-
-    getGloabalVehicleData(options, playercoords)
-
-    amount = #options
 
     if amount > 1 then
         table_sort(options, function(a, b)
