@@ -523,7 +523,7 @@ function api.getNearbyInteractions()
 end
 
 function api.disable(state)
-    LocalPlayer.state:set('interactionsDisabled', state, true)
+    LocalPlayer.state:set('interactionsDisabled', state, false)
 end exports('Disable', api.disable)
 
 AddEventHandler('onClientResourceStop', function(resource)
