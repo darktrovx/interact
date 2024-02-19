@@ -3,8 +3,12 @@ local netIds = {}
 local models = {}
 local localEnties = {}
 
+-- Sub caches are used for caching shit that is run every 250ms in the main loop
+local subCache = {}
+
 function entities.isNetIdNearby(netID)
-    return netIds[netID]
+    local entity = netIds[netID]
+    return entity and entity.entity
 end
 
 function entities.getModelEntities(model)
@@ -19,6 +23,9 @@ function entities.getEntitiesByType(type)
     local amount = 0
     local entityTable = {}
 
+    if subCache[type] then
+        return #subCache[type], subCache[type]
+    end
 
     for k, v in pairs(localEnties) do
         if v.type == type then
@@ -34,6 +41,8 @@ function entities.getEntitiesByType(type)
         end
     end
 
+    subCache[type] = entityTable
+
     return amount, entityTable
 end
 
@@ -41,6 +50,7 @@ local function clearTables()
     table.wipe(netIds)
     table.wipe(models)
     table.wipe(localEnties)
+    table.wipe(subCache)
 end
 
 local NetworkGetNetworkIdFromEntity = NetworkGetNetworkIdFromEntity

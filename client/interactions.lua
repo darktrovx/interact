@@ -9,10 +9,15 @@ local table_type = table.type
 
 -- CACHE.
 local MODELS = {}
-local ENTITIES = {}
 local ENTITY_BONES = {}
-local NETWORKED_ENTITIES = {}
 local api = {}
+
+
+
+
+
+local entityInteractions = {}
+local netInteractions = {}
 
 local myGroups = {}
 
@@ -22,47 +27,6 @@ local function generateUUID()
         local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
         return string.format('%x', v)
     end)
-end
-
-local function veryEntityInteraction(interaction)
-
-    if not interaction then
-        return log:error('Interaction does not exist')
-    end
-
-    if not interaction.entity then
-        return log:error('Entity is required to add an interaction')
-    else
-        if type(interaction.entity) ~= 'number' then
-            return log:error('Entity must be a number')
-        end
-
-        if not DoesEntityExist(interaction.entity) then
-            return log:error('Entity %s does not exist', interaction.entity)
-        end
-    end
-
-    if not interaction.options then
-        return log:error('Options are required to add an interaction')
-    end
-
-    -- makes it so you can send a singular object instead of an array
-    if table_type(interaction.options) ~= 'array' then
-        interaction.options = { interaction.options }
-    end
-
-    -- Translates types of groups into a key value pair for easier checking
-    if interaction.groups then
-        if type(interaction.groups) == 'string' then
-            interaction.groups = { [interaction.groups] = 0, }
-        elseif table_type(interaction.groups) == 'array' then
-            for i = 1, #interaction.groups do
-                interaction.groups[interaction.groups[i]] = 0
-            end
-        end
-    end
-
-    return true
 end
 
 local function verifyInteraction(interaction)
@@ -115,16 +79,31 @@ local function filterInteractions()
     for i = 1, #interactions do
         local interaction = interactions[i]
 
-        if interaction.groups then
-            local valid = hasGroup(interaction.groups)
+        if not interaction.groups or hasGroup(interaction.groups) then
+            amount += 1
+            newInteractions[amount] = interaction
+        end
+    end
 
-            if valid then
+    for _, allInteraction in pairs(netInteractions) do
+        for i = 1, #allInteraction do
+            local interaction = allInteraction[i]
+
+            if not interaction.groups or hasGroup(interaction.groups) then
                 amount += 1
                 newInteractions[amount] = interaction
             end
-        else
-            amount += 1
-            newInteractions[amount] = interaction
+        end
+    end
+
+    for _, allInteractions in pairs(entityInteractions) do
+        for i = 1, #allInteractions do
+            local interaction = allInteractions[i]
+
+            if not interaction.groups or hasGroup(interaction.groups) then
+                amount += 1
+                newInteractions[amount] = interaction
+            end
         end
     end
 
@@ -192,7 +171,8 @@ function api.addInteraction(data)
     end
 
     local id = data.id or generateUUID()
-    interactions[#interactions + 1] = {
+
+    local dataTable = {
         id = id,
         name = data.name or ('interaction:%s'):format(id),
         coords = data.coords,
@@ -204,13 +184,12 @@ function api.addInteraction(data)
         resource = GetInvokingResource()
     }
 
-    -- Only add the interaction if it does not have groups
-    if data.groups then
-        local valid = hasGroup(groups)
+    interactions[#interactions + 1] = dataTable
 
-        if valid then
-            filteredInteractions[#filteredInteractions + 1] = interactions[id]
-        end
+    -- Only add the interaction if it does not have groups
+
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = dataTable
     end
 
     return id
@@ -221,80 +200,40 @@ end exports('AddInteraction', api.addInteraction)
 -- Add an interaction point on a local (client side) entity
 function api.addLocalEntityInteraction(data)
     local entity = data.entity
-    if not veryEntityInteraction(data) then
-        if ENTITIES[entity] then
-            ENTITIES[entity] = nil
-        end
+
+    if not entity then
+        return log:error('Entity is required to add an interaction')
+    elseif type(data.entity) ~= 'number' or not DoesEntityExist(data.entity) then
+        return log:error('Invalid entity')
+    end
+
+    if not verifyInteraction(data) then
         return
     end
 
-
-
-    -- If then entity not registered yet, add it
-    if not ENTITIES[entity] then
-        log:debug('Adding entity %s to interactions', entity)
-
-        local id = data.id or generateUUID()
-
-        local options = data.options or {}
-        interactions[#interactions + 1] = {
-            id = id,
-            name = data.name or ('interaction:%s'):format(id),
-            entity = entity,
-            width = utils.getOptionsWidth(options),
-            options = options,
-            distance = data.distance or 8.0,
-            interactDst = data.interactDst or 1.0,
-            offset = data.offset or vec(0.0, 0.0, 0.0),
-            groups = data.groups or nil,
-            resource = GetInvokingResource()
-        }
-
-        ENTITIES[entity] = interactions[id]
-
-        filterInteractions()
-        return id
-    end
-
-    -- If the entity is already registered, update it
-    log:debug('Updating entity %s in interactions', entity)
-    for index, option in pairs(data.options) do
-        if option.name and ENTITIES[entity].options[index]?.name == option.name then
-            log:debug('Option with name: ( %s ) already exists, updating', option.name)
-            ENTITIES[entity].options[index] = option
-        else
-            ENTITIES[entity].options[#ENTITIES[entity].options + 1] = option
-        end
-    end
-
-    -- Update the distance and interactDst if the new data is greater
-    if data.distance > ENTITIES[entity].distance then
-        ENTITIES[entity].distance = data.distance
-    end
-
-    if data.interactDst > ENTITIES[entity].interactDst then
-        ENTITIES[entity].interactDst = data.interactDst
-    end
-
-    -- Update the offset if there is new data
-    if data.offset then
-        ENTITIES[entity].offset = data.offset
+    if not entityInteractions[entity] then
+        entityInteractions[entity] = {}
     end
 
     local id = data.id or generateUUID()
-
-    interactions[#interactions + 1] = {
+    local tableData = {
         id = id,
+        name = data.name or ('interaction:%s'):format(id),
         entity = entity,
-        options = ENTITIES[entity].options,
-        width = utils.getOptionsWidth(ENTITIES[entity].options),
-        distance = ENTITIES[entity].distance,
-        interactDst = ENTITIES[entity].interactDst,
-        offset = ENTITIES[entity].offset,
+        width = utils.getOptionsWidth(options),
+        options = options,
+        distance = data.distance or 8.0,
+        interactDst = data.interactDst or 1.0,
+        offset = data.offset or vec(0.0, 0.0, 0.0),
+        groups = data.groups,
         resource = GetInvokingResource()
     }
 
-    filterInteractions()
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = tableData
+    end
+
+    entityInteractions[entity][#entityInteractions[entity] + 1] = tableData
 
     return id
 end exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
@@ -304,96 +243,44 @@ end exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
 -- Add an interaction point on a networked entity
 function api.addEntityInteraction(data)
     local netId = data.netId
+
     -- If the netId does not exist, we assume it is an entity
-    local entity
-    if type(netId) == 'number' and not NetworkDoesNetworkIdExist(netId) then
-        entity = netId
-        netId = utils.getEntity(netId)
+    if not netId or not NetworkDoesNetworkIdExist(netId) then
+        local entity = data.entity or data.netId
+        if DoesEntityExist(entity) then
+            data.entity = entity
+            return api.addLocalEntityInteraction(data)
+        end
     end
 
-    if not veryEntityInteraction(data) then
-        if NETWORKED_ENTITIES[netId] then
-            NETWORKED_ENTITIES[netId] = nil
-        end
-
+    if not verifyInteraction(data) then
         return
     end
 
-    -- If the entity is not networked, add it as a local entity
-    if not NetworkGetEntityIsNetworked(entity) then
-        log:debug('Entity %s is not networked, adding as a local entity', entity)
-        data.entity = entity
-        return api.addLocalEntityInteraction(data)
-    end
-
-    -- If then netId not registered yet, add it
-    if not NETWORKED_ENTITIES[netId] then
-        log:debug('Adding networkID %s to interactions', netId)
-
-        local id = data.id or generateUUID()
-
-        local options = data.options or {}
-        interactions[#interactions + 1] = {
-            id = id,
-            name = data.name or ('interaction:%s'):format(id),
-            entity = entity,
-            width = utils.getOptionsWidth(options),
-            options = options,
-            distance = data.distance or 10.0,
-            interactDst = data.interactDst or 1.0,
-            offset = data.offset or vec(0.0, 0.0, 0.0),
-            groups = data.groups or nil,
-            resource = GetInvokingResource()
-        }
-
-        NETWORKED_ENTITIES[netId] = interactions[id]
-
-        filterInteractions()
-        return id
-    end
-
-    -- If the networkID is already registered, update it
-    log:debug('Updating networkID %s in interactions', netId)
-
-    for i = 1, #data.options do
-        local option = data.options[i]
-
-        if option.name and NETWORKED_ENTITIES[netId].options[i]?.name == option.name then
-            log:debug('Option with name: ( %s ) already exists, updating', option.name)
-            NETWORKED_ENTITIES[netId].options[i] = option
-        else
-            NETWORKED_ENTITIES[netId].options[#NETWORKED_ENTITIES[netId].options + 1] = option
-        end
-    end
-
-    -- Update the distance and interactDst if the new data is greater
-    if data.distance > NETWORKED_ENTITIES[netId].distance then
-        NETWORKED_ENTITIES[netId].distance = data.distance
-    end
-
-    if data.interactDst > NETWORKED_ENTITIES[netId].interactDst then
-        NETWORKED_ENTITIES[netId].interactDst = data.interactDst
-    end
-
-    -- Update the offset if there is new data
-    if data.offset then
-        NETWORKED_ENTITIES[netId].offset = data.offset
-    end
-
-
     local id = data.id or generateUUID()
-    interactions[#interactions+1] = {
+
+    if not netInteractions[netId] then
+        netInteractions[netId] = {}
+    end
+
+    local dataTable = {
         id = id,
-        entity = entity,
-        options = NETWORKED_ENTITIES[netId].options,
-        width = utils.getOptionsWidth(NETWORKED_ENTITIES[netId].options),
-        distance = NETWORKED_ENTITIES[netId].distance,
-        interactDst = NETWORKED_ENTITIES[netId].interactDst,
-        offset = NETWORKED_ENTITIES[netId].offset,
+        name = data.name or ('interaction:%s'):format(id),
+        width = utils.getOptionsWidth(data.options),
+        netId = netId,
+        options = data.options,
+        distance = data.distance or 10.0,
+        interactDst = data.interactDst or 1.0,
+        offset = data.offset or vec(0.0, 0.0, 0.0),
+        groups = data.groups,
         resource = GetInvokingResource()
     }
 
-    filterInteractions()
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = dataTable
+    end
+
+    netInteractions[netId][#netInteractions[netId]+1] = dataTable
 
     return id
 end exports('AddEntityInteraction', api.addEntityInteraction)
@@ -430,13 +317,13 @@ function api.addEntityBoneInteraction(data)
             offset = data.offset or vec(0.0, 0.0, 0.0),
             options = data.options,
             width = utils.getOptionsWidth(data.options),
-            groups = data.groups or nil,
+            groups = data.groups,
         }
     else
         log:debug('Updating %s in bone interactions', key)
 
         for index, option in pairs(data.options) do
-            if option.name and NETWORKED_ENTITIES[netId].options[index]?.name == option.name then
+            if option.name and netInteractions[netId].options[index]?.name == option.name then
                 log:debug('Option with name: ( %s ) already exists, updating', option.name)
                 ENTITY_BONES[key].options[index] = option
             else
@@ -628,6 +515,21 @@ local function addDefaultVehicle()
     end
 end
 
+
+local function getReturnData(options, distance, interaction)
+    return {
+        id = interaction.id,
+        entity = interaction.entity,
+        bone = interaction.bone,
+        coords = interaction.coords,
+        options = options,
+        curDist = distance,
+        interactDst = interaction.interactDst,
+        width = interaction.width,
+        offset = interaction.offset,
+    }
+end
+
 function api.getNearbyInteractions()
     local options = {}
     local amount = 0
@@ -647,25 +549,30 @@ function api.getNearbyInteractions()
 
             if interactionAmount > 0 then
                 amount += 1
-                options[amount] = {
-                    id = interaction.id,
-                    entity = interaction.entity,
-                    bone = interaction.bone,
-                    options = interactOptions,
-                    curDist = distance,
-                    interactDst = interaction.interactDst,
-                    width = interaction.width,
-                    offset = interaction.offset,
-                }
+                options[amount] = getReturnData(interactOptions, distance, interaction)
             end
         end
     end
 
     local amountOfInteractions = #filteredInteractions
+
     if amountOfInteractions > 0 then
         for i = 1, amountOfInteractions do
-
             local interaction = filteredInteractions[i]
+
+            -- Check if the interaction is a networked entity
+            if interaction.netId then
+                local entity = entities.isNetIdNearby(interaction.netId)
+
+                if not entity then
+                    goto skip
+                end
+
+                interaction.entity = entity
+            elseif interaction.entity and not entities.isEntityNearby(interaction.entity) then
+                goto skip
+            end
+
             local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
             local distance = #(coords - playercoords)
 
@@ -673,16 +580,11 @@ function api.getNearbyInteractions()
                 local interactOptions, interactionAmount = getInteractionOptions(interaction)
                 if interactionAmount > 0 then
                     amount += 1
-                    options[amount] = {
-                        id = interaction.id,
-                        coords = coords,
-                        options = interactOptions,
-                        curDist = distance,
-                        interactDst = interaction.interactDst,
-                        width = interaction.width,
-                    }
+                    options[amount] = getReturnData(interactOptions, distance, interaction)
                 end
             end
+
+            :: skip ::
         end
     end
 
