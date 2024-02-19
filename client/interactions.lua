@@ -177,8 +177,8 @@ function api.addLocalEntityInteraction(data)
         id = id,
         name = data.name or ('interaction:%s'):format(id),
         entity = entity,
-        width = utils.getOptionsWidth(options),
-        options = options,
+        width = utils.getOptionsWidth(data.options),
+        options = data.options,
         distance = data.distance or 8.0,
         interactDst = data.interactDst or 1.0,
         offset = data.offset,
@@ -496,7 +496,7 @@ function api.getNearbyInteractions()
 
             local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
             local distance = #(coords - playercoords)
-
+            
             if distance <= interaction.distance then
                 local interactOptions, interactionAmount = getInteractionOptions(interaction)
                 if interactionAmount > 0 then
