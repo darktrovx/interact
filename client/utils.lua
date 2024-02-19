@@ -68,12 +68,12 @@ function utils.getCoordsFromInteract(interaction)
                 return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
             else
                 if IsEntityAPed(interaction.entity) then
-                    if interaction.offset and interaction.offset ~= vec3(0.0, 0.0, 0.0) then
+                    if interaction.offset then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
                     return GetEntityBonePosition_2(interaction.entity, 0) -- SKEL_ROOT
                 else
-                    if interaction.offset and interaction.offset ~= vec3(0.0, 0.0, 0.0) then
+                    if interaction.offset then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
 

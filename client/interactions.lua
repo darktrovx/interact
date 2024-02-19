@@ -56,18 +56,15 @@ local function verifyInteraction(interaction)
 end
 
 local function hasGroup(groups)
-    local valid = false
-
     if groups then
         for group, grade in pairs(groups) do
             if myGroups[group] and myGroups[group] >= grade then
-                valid = true
-                break
+                return true
             end
         end
     end
 
-    return valid
+    return false
 end
 
 local function filterEntityInteractions(newInteractions, data)
@@ -184,7 +181,7 @@ function api.addLocalEntityInteraction(data)
         options = options,
         distance = data.distance or 8.0,
         interactDst = data.interactDst or 1.0,
-        offset = data.offset or vec(0.0, 0.0, 0.0),
+        offset = data.offset,
         groups = data.groups,
         resource = GetInvokingResource()
     }
@@ -231,7 +228,7 @@ function api.addEntityInteraction(data)
         options = data.options,
         distance = data.distance or 10.0,
         interactDst = data.interactDst or 1.0,
-        offset = data.offset or vec(0.0, 0.0, 0.0),
+        offset = data.offset,
         groups = data.groups,
         resource = GetInvokingResource()
     }
@@ -258,7 +255,7 @@ function api.addGlobalVehicleInteraction(data)
         options = data.options,
         distance = data.distance or 10.0,
         interactDst = data.interactDst or 1.0,
-        offset = data.offset or vec(0.0, 0.0, 0.0),
+        offset = data.offset,
         bone = data.bone,
         width = utils.getOptionsWidth(data.options),
         global = true,
@@ -483,7 +480,6 @@ function api.getNearbyInteractions()
                 amount = #options
                 goto skip
             end
-
 
             -- Check if the interaction is a networked entity
             if interaction.netId then
