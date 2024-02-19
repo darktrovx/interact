@@ -1,6 +1,5 @@
 local log = require 'shared.log'
 local utils = require 'client.utils'
-local settings = require 'shared.settings'.vehicleBoneDefaults
 local entities = require 'client.entities'
 
 local interactions, filteredInteractions = {}, {}
@@ -8,8 +7,6 @@ local table_sort = table.sort
 local table_type = table.type
 
 -- CACHE.
-local MODELS = {}
-local ENTITY_BONES = {}
 local api = {}
 
 
@@ -17,8 +14,9 @@ local api = {}
 
 
 local entityInteractions = {}
+local modelInteractions = {}
 local netInteractions = {}
-
+local globalVehicleInteractions = {}
 local myGroups = {}
 
 -- Used for backwards compatibility, to ensure we return the ID of the interaction
@@ -72,20 +70,10 @@ local function hasGroup(groups)
     return valid
 end
 
-local function filterInteractions()
-    local newInteractions = {}
-    local amount = 0
+local function filterEntityInteractions(newInteractions, data)
+    local amount = #data
 
-    for i = 1, #interactions do
-        local interaction = interactions[i]
-
-        if not interaction.groups or hasGroup(interaction.groups) then
-            amount += 1
-            newInteractions[amount] = interaction
-        end
-    end
-
-    for _, allInteraction in pairs(netInteractions) do
+    for _, allInteraction in pairs(data) do
         for i = 1, #allInteraction do
             local interaction = allInteraction[i]
 
@@ -95,10 +83,14 @@ local function filterInteractions()
             end
         end
     end
+end
 
-    for _, allInteractions in pairs(entityInteractions) do
-        for i = 1, #allInteractions do
-            local interaction = allInteractions[i]
+local function filterOtherInteractions(newInteractions, data)
+    local amount = #data
+
+    if amount > 0 then
+        for i = 1, #data do
+            local interaction = data[i]
 
             if not interaction.groups or hasGroup(interaction.groups) then
                 amount += 1
@@ -106,6 +98,19 @@ local function filterInteractions()
             end
         end
     end
+end
+
+local function filterInteractions()
+    local newInteractions = {}
+
+    -- All of these are essentially the same, data structure so we can use the same function
+    filterEntityInteractions(newInteractions, netInteractions)
+    filterEntityInteractions(newInteractions, entityInteractions)
+    filterEntityInteractions(newInteractions, modelInteractions)
+
+    -- Filter out the other interactions that are not local/net entitiy interactions
+    filterOtherInteractions(newInteractions, interactions)
+    filterOtherInteractions(newInteractions, globalVehicleInteractions)
 
     filteredInteractions = newInteractions
 end
@@ -115,52 +120,6 @@ AddEventHandler('interact:groupsChanged', function(groups)
 
     filterInteractions()
 end)
-
----@param model number|string : The model to add the interaction to
----@param options table : { label, canInteract, action, event, serverEvent, args }
----@param data table : { distance, interactDst, resource }
-local function addModel(model, options, data)
-    if type(model) ~= "number" then
-        model = joaat(model)
-    end
-
-    if not IsModelValid(model) then
-        log:error('Model %s is not valid', model)
-        return
-    end
-
-    if not MODELS[model] then
-        log:debug('Adding model %s to interactions', model)
-        MODELS[model] = {
-            model = model,
-            offset = data.offset,
-            options = options,
-            width = data.width or utils.getOptionsWidth(options),
-            distance = data.distance,
-            interactDst = data.interactDst,
-            resource = data.resource,
-        }
-    else
-        log:debug('Updating model %s in interactions', model)
-        for _, option in pairs(options) do
-            MODELS[model].options[#MODELS[model].options + 1] = option
-        end
-
-        -- Update the distance and interactDst if the new data is greater
-        if data.distance > MODELS[model].distance then
-            MODELS[model].distance = data.distance
-        end
-
-        if data.interactDst > MODELS[model].interactDst then
-            MODELS[model].interactDst = data.interactDst
-        end
-
-        -- Update the offset if there is new data
-        if data.offset then
-            MODELS[model].offset = data.offset
-        end
-    end
-end
 
 ---@param data table : { name, coords, options, distance, interactDst, groups }
 ---@return string | nil : The id of the interaction
@@ -285,100 +244,78 @@ function api.addEntityInteraction(data)
     return id
 end exports('AddEntityInteraction', api.addEntityInteraction)
 
----@param data table : { name, entity[number|string], bone[string], options, distance, interactDst, groups }
----@return number : The id of the interaction
--- Add an interaction point on a networked entity's bone
-function api.addEntityBoneInteraction(data)
-
-    if not data.entity then
-        log:error('Entity is required to add an interaction')
-        return 0
+function api.addGlobalVehicleInteraction(data)
+    if not verifyInteraction(data) then
+        return
     end
 
-    if not data.bone then
-        log:error('Bone is required to add an interaction')
-        return 0
+    local id = data.id or generateUUID()
+
+    local dataTable = {
+        id = id,
+        name = data.name or ('interaction:%s'):format(id),
+        options = data.options,
+        distance = data.distance or 10.0,
+        interactDst = data.interactDst or 1.0,
+        offset = data.offset or vec(0.0, 0.0, 0.0),
+        bone = data.bone,
+        width = utils.getOptionsWidth(data.options),
+        global = true,
+        groups = data.groups,
+        resource = GetInvokingResource()
+    }
+
+    globalVehicleInteractions[#globalVehicleInteractions + 1] = dataTable
+
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = dataTable
     end
-
-    if not data.options then
-        log:error('Options are required to add an interaction')
-        return 0
-    end
-
-    -- temp workaround until table refactoring.
-    local key = string.format('%s:%s', data.entity, data.bone)
-    if not ENTITY_BONES[key] then
-        log:debug('Added new entity bone interaction: %s', key)
-        ENTITY_BONES[key] = {
-            entity = data.entity,
-            bone = data.bone,
-            distance = data.distance or 10.0,
-            interactDst = data.interactDst or 1.0,
-            offset = data.offset or vec(0.0, 0.0, 0.0),
-            options = data.options,
-            width = utils.getOptionsWidth(data.options),
-            groups = data.groups,
-        }
-    else
-        log:debug('Updating %s in bone interactions', key)
-
-        for index, option in pairs(data.options) do
-            if option.name and netInteractions[netId].options[index]?.name == option.name then
-                log:debug('Option with name: ( %s ) already exists, updating', option.name)
-                ENTITY_BONES[key].options[index] = option
-            else
-                ENTITY_BONES[key].options[#ENTITY_BONES[key].options + 1] = option
-            end
-        end
-
-        -- Update the distance and interactDst if the new data is greater
-        if data.distance > ENTITY_BONES[key].distance then
-            ENTITY_BONES[key].distance = data.distance
-        end
-
-        if data.interactDst > ENTITY_BONES[key].interactDst then
-            ENTITY_BONES[key].interactDst = data.interactDst
-        end
-
-        -- Update the offset if there is new data
-        if data.offset then
-            ENTITY_BONES[key].offset = data.offset
-        end
-
-        log:debug('Updated entity bone interaction: %s', key)
-        ENTITY_BONES[key] = {
-            entity = data.entity,
-            bone = data.bone,
-            options = ENTITY_BONES[key].options,
-            width = utils.getOptionsWidth(ENTITY_BONES[key].options),
-            distance = ENTITY_BONES[key].distance,
-            interactDst = ENTITY_BONES[key].interactDst,
-            offset = ENTITY_BONES[key].offset,
-            resource = GetInvokingResource()
-        }
-    end
-
-    filterInteractions()
 
     return id
+end exports('AddGlobalVehicleInteraction', api.addGlobalVehicleInteraction)
+
+
+---@param data table : { name, entity[number|string], bone[string], options, distance, interactDst, groups }
+---@return number | nil : The id of the interaction
+-- Add an interaction point on a networked entity's bone
+function api.addEntityBoneInteraction(data)
+    lib.print.warn('addEntityBoneInteraction is deprecated, use AddEntityInteraction or AddLocalEntityInteraction instead')
 end exports('AddEntityBoneInteraction', api.addEntityBoneInteraction)
 
 ---@param data table : { name, modelData table : { model[string], offset[vec3] }, options, distance, interactDst, groups }
 -- Add interaction(s) to a list of models
 function api.addModelInteraction(data)
-    data.distance = data.distance or 8.0
-    data.interactDst = data.interactDst or 1.0
-    for i = 1, #data.modelData do
-        local modelData = data.modelData[i]
-        if IsModelValid(modelData.model) then
-            local min, max = GetModelDimensions(modelData.model)
-            local size = (max - min)
-            data.interactDst += (size.x / 8)
-            data.distance += (size.x / 4)
-            data.resource = GetInvokingResource()
-            addModel(modelData.model, data.options, { offset = modelData.offset, distance = data.distance, interactDst = data.interactDst, resource = data.resource })
-        end
+    local model = data.model
+    model = type(model) == 'number' and model or joaat(model)
+
+    if not IsModelValid(model) then
+        return log:error('Model %s is not valid', model)
+    elseif not verifyInteraction(data) then
+        return
     end
+
+    if not modelInteractions[model] then
+        modelInteractions[model] = {}
+    end
+
+
+    local tableData = {
+        offset = data.offset,
+        options = data.options,
+        bone = data.bone,
+        width = data.width or utils.getOptionsWidth(options),
+        distance = data.distance or 10,
+        interactDst = data.interactDst or 1,
+        groups = data.groups,
+        resource = data.resource,
+    }
+
+
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = tableData
+    end
+
+    modelInteractions[model][#modelInteractions[model] + 1] = tableData
 end exports('AddModelInteraction', api.addModelInteraction)
 
 local function getInteractionFromId(id)
@@ -408,6 +345,8 @@ exports('RemoveInteraction', api.removeInteraction)
 ---@param entity number : The entity to remove the interaction from
 -- Remove an interaction point by entity.
 function api.removeInteractionByEntity(entity)
+    lib.print.warn('removeInteractionByEntity is deprecated, use RemoveLocalEntityInteraction instead')
+
     local changed = false
     for i = #interactions, 1, -1 do
         local interaction = interactions[i]
@@ -489,33 +428,6 @@ local function getInteractionOptions(interaction)
     return currentOptions, added
 end
 
-local function addDefaultVehicle()
-    local amount, nearbyVehicles = entities.getEntitiesByType('vehicle')
-
-    if amount > 0 then
-        for i = 1, amount do
-            local vehicle = nearbyVehicles[i]
-
-            for bone, data in pairs(settings.bones) do
-                local key = string.format('%s:%s', vehicle, bone)
-
-                if not ENTITY_BONES[key] then
-                    api.addEntityBoneInteraction({
-                        entity = vehicle,
-                        bone = bone,
-                        options = data.options,
-                        width = data.width or utils.getOptionsWidth(data.options),
-                        distance = data.distance,
-                        interactDst = data.interactDst,
-                        offset = data.offset,
-                    })
-                end
-            end
-        end
-    end
-end
-
-
 local function getReturnData(options, distance, interaction)
     return {
         id = interaction.id,
@@ -530,29 +442,41 @@ local function getReturnData(options, distance, interaction)
     }
 end
 
+local function getGloabalVehicleData(options, playercoords)
+    local globalVehicleAmount = #globalVehicleInteractions
+
+    if globalVehicleAmount > 0 then
+        local amount = #options
+        local vehicleAmount, vehicles = entities.getEntitiesByType('vehicle')
+
+        if vehicleAmount > 0 then
+            for i = 1, globalVehicleAmount do
+                local interaction = globalVehicleInteractions[i]
+
+                for j = 1, vehicleAmount do
+                    interaction.entity = vehicles[j]
+
+                    local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
+
+                    if distance <= interaction.distance then
+                        local interactOptions, interactionAmount = getInteractionOptions(interaction)
+
+                        if interactionAmount > 0 then
+                            amount += 1
+                            options[amount] = getReturnData(interactOptions, distance, interaction)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function api.getNearbyInteractions()
     local options = {}
     local amount = 0
 
     local playercoords = GetEntityCoords(cache.ped)
-
-    if settings.enabled then
-        addDefaultVehicle()
-    end
-
-    for _, interaction in pairs(ENTITY_BONES) do
-        local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
-        if distance <= interaction.distance then
-
-
-            local interactOptions, interactionAmount = getInteractionOptions(interaction)
-
-            if interactionAmount > 0 then
-                amount += 1
-                options[amount] = getReturnData(interactOptions, distance, interaction)
-            end
-        end
-    end
 
     local amountOfInteractions = #filteredInteractions
 
@@ -567,7 +491,6 @@ function api.getNearbyInteractions()
                 if not entity then
                     goto skip
                 end
-
                 interaction.entity = entity
             elseif interaction.entity and not entities.isEntityNearby(interaction.entity) then
                 goto skip
@@ -587,6 +510,10 @@ function api.getNearbyInteractions()
             :: skip ::
         end
     end
+
+    getGloabalVehicleData(options, playercoords)
+
+    amount = #options
 
     if amount > 1 then
         table_sort(options, function(a, b)

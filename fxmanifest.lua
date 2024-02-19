@@ -27,7 +27,8 @@ client_scripts {
     'bridge/init.lua',
     'client/textures.lua',
     'client/interacts.lua',
-    'client/raycast.lua'
+    'client/raycast.lua',
+    'client/defaults.lua',
 }
 server_scripts {
     'server/main.lua',
