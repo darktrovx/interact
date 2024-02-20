@@ -21,8 +21,4 @@ return {
         onVehicle = true, -- Disable interactions while in a vehicle
         onHandCuff = true, -- Disable interactions while handcuffed
     },
-
-    -- Nearby object distance check.
-    nearbyObjectDistance = 20.0, -- Keep it at 15.0 at minimum.
-    nearbyVehicleDistance = 4.0
 }

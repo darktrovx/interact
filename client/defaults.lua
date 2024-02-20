@@ -4,8 +4,6 @@ end
 
 local api = require 'client.interactions'
 
-
-
 api.addGlobalVehicleInteraction({
     distance = 5.0,
     interactDst = 1.5,
