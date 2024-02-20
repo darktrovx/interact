@@ -31,6 +31,7 @@ local nearby, nearbyAmount = {}, 0
 local function CreateInteractions()
     for i = 1, nearbyAmount do
         local interaction = nearby[i]
+        if not interaction then return end
         local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
         if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
