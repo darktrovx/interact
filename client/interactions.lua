@@ -384,10 +384,7 @@ function api.removeModelInteraction(model, id)
         for i = 1, #modelInteractions[model] do
             local interaction = modelInteractions[model][i]
 
-            print(interaction.id, id)
             if interaction.id == id then
-
-                print("id exsist")
                 removeFilteredInteraction(interaction)
                 table.remove(modelInteractions[model], i)
                 return
