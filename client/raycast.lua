@@ -1,11 +1,3 @@
-CurrentTarget = nil
-
-local StartShapeTestSweptSphere = StartShapeTestSweptSphere
-local GetShapeTestResult = GetShapeTestResult
-local GetPedBoneCoords = GetPedBoneCoords
-local GetGameplayCamRot = GetGameplayCamRot
-local GetEntityType = GetEntityType
-
 local function getForwardVector(rotation)
     local rot = (math.pi / 180.0) * rotation
     return vector3(-math.sin(rot.z) * math.abs(math.cos(rot.x)), math.cos(rot.z) * math.abs(math.cos(rot.x)), math.sin(rot.x))
@@ -32,18 +24,9 @@ local function entityInFrontOfPlayer(distance, radius, ignoreEntity)
     return targetEntity, entityType
 end
 
-CreateThread(function()
-    while true do
-        Wait(250)
-        local entity, entityType
-        pcall(function() entity, entityType = entityInFrontOfPlayer(3.0, 0.2, cache.ped) end)
-        if entity and entityType ~= 0 then
-            if entity ~= CurrentTarget then
-                CurrentTarget = entity
-            end
-        elseif CurrentTarget then
-            CurrentTarget = nil
-        end
+return function()
+    local entity, entityType
+    pcall(function() entity, entityType = entityInFrontOfPlayer(3.0, 0.2, cache.ped) end)
 
-    end
-end)
+    return entity and entityType ~= 0 and entity or nil
+end

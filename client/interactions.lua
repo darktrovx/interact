@@ -299,9 +299,10 @@ function api.addModelInteraction(data)
 
     local tableData = {
         offset = data.offset,
+        model = model,
         options = data.options,
         bone = data.bone,
-        width = data.width or utils.getOptionsWidth(options),
+        width = data.width or utils.getOptionsWidth(data.options),
         distance = data.distance or 10,
         interactDst = data.interactDst or 1,
         groups = data.groups,
@@ -463,6 +464,29 @@ local function addGlobalVehicleData(interaction, options, playercoords)
     end
 end
 
+local function addModelInteraction(interaction, options, playercoords)
+    local modelEntities = entities.getModelEntities(interaction.model)
+    local entityNumbers = modelEntities and #modelEntities
+
+    if entityNumbers and entityNumbers > 0 then
+        local amount = #options
+
+        for j = 1, entityNumbers do
+            interaction.entity = modelEntities[j].entity
+            local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
+
+            if distance <= interaction.distance then
+                local interactOptions, interactionAmount = getInteractionOptions(interaction)
+
+                if interactionAmount > 0 then
+                    amount += 1
+                    options[amount] = getReturnData(interactOptions, distance, interaction)
+                end
+            end
+        end
+    end
+end
+
 function api.getNearbyInteractions()
     local options = {}
     local amount = 0
@@ -477,6 +501,12 @@ function api.getNearbyInteractions()
 
             if interaction.global then
                 addGlobalVehicleData(interaction, options, playercoords)
+                amount = #options
+                goto skip
+            end
+
+            if interaction.model then
+                addModelInteraction(interaction, options, playercoords)
                 amount = #options
                 goto skip
             end
@@ -496,7 +526,7 @@ function api.getNearbyInteractions()
 
             local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
             local distance = #(coords - playercoords)
-            
+
             if distance <= interaction.distance then
                 local interactOptions, interactionAmount = getInteractionOptions(interaction)
                 if interactionAmount > 0 then

@@ -34,3 +34,24 @@ api.addGlobalVehicleInteraction({
     }
 
 })
+
+--[[local dumpsters = {218085040, 666561306, -58485588, -206690185, 1511880420, 682791951}
+
+-- Test code for models
+
+for i = 1, #dumpsters do
+    api.addModelInteraction({
+        model = dumpsters[i],
+        distance = 30.0,
+        interactDst = 2,
+        offset = vec3(0.0, -0.5, 1.0),
+        options = {
+            name = 'interact:trunk',
+            label = 'Search Dumpster',
+            distance = 20,
+            action = function()
+                print("works just fine")
+            end
+        }
+    })
+end]]

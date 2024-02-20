@@ -21,6 +21,7 @@ local selected, unselected, interact, pin = settings.Textures.selected, settings
 
 local currentSelection = 0
 local currentInteraction = 0
+local CurrentTarget = 0
 
 local function createOption(coords, option, id, width)
     utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, true)
@@ -119,15 +120,19 @@ CreateThread(function ()
 end)
 
 -- Slow checker thread
+local getCurrentTarget = require 'client.raycast'
 local threadTimer = GetConvarInt('interact_thread', 250)
 CreateThread(function()
     while true do
         disableInteraction = isDisabled()
         if disableInteraction then
             nearby, nearbyAmount = table.wipe(nearby), 0
+            CurrentTarget = 0
         else
+            CurrentTarget = getCurrentTarget() or 0
             nearby, nearbyAmount = interactions.getNearbyInteractions()
         end
+
         Wait(threadTimer)
     end
 end)
