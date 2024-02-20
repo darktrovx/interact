@@ -9,10 +9,6 @@ local table_type = table.type
 -- CACHE.
 local api = {}
 
-
-
-
-
 local entityInteractions = {}
 local modelInteractions = {}
 local netInteractions = {}
@@ -296,10 +292,12 @@ function api.addModelInteraction(data)
         modelInteractions[model] = {}
     end
 
+    local id = data.id or generateUUID()
 
     local tableData = {
         offset = data.offset,
         model = model,
+        id = id,
         options = data.options,
         bone = data.bone,
         width = data.width or utils.getOptionsWidth(data.options),
@@ -315,14 +313,18 @@ function api.addModelInteraction(data)
     end
 
     modelInteractions[model][#modelInteractions[model] + 1] = tableData
+
+    return id
 end exports('AddModelInteraction', api.addModelInteraction)
 
-local function getInteractionFromId(id)
-    for i = 1, #interactions do
-        local interaction = interactions[i]
-
-        if interaction.id == id then
-            return i
+local function removeFilteredInteraction(interaction)
+    if not interaction.groups or hasGroup(interaction.groups) then
+        local id = interaction.id
+        for i = #filteredInteractions, 1, -1 do
+            if filteredInteractions[i].id == id then
+                table.remove(filteredInteractions, i)
+                return
+            end
         end
     end
 end
@@ -330,13 +332,15 @@ end
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 function api.removeInteraction(id)
-    local index = getInteractionFromId(id)
+    if id then
+        for i = 1, #interactions do
+            local interaction = interactions[i]
 
-    if index then
-        table.remove(interactions, index)
-
-        log:debug('Removed interaction %s', id)
-        filterInteractions()
+            if interaction.id == id then
+                removeFilteredInteraction(interaction)
+                table.remove(interactions, i)
+            end
+        end
     end
 end
 exports('RemoveInteraction', api.removeInteraction)
@@ -360,6 +364,65 @@ function api.removeInteractionByEntity(entity)
         filterInteractions()
     end
 end exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
+
+function api.removeLocalEntityInteraction(entity, id)
+    if entity and id and entityInteractions[entity] then
+        for i = 1, #entityInteractions[entity] do
+            local interaction = entityInteractions[entity][i]
+
+            if interaction.id == id then
+                removeFilteredInteraction(interaction)
+                table.remove(entityInteractions[entity], i)
+                return
+            end
+        end
+    end
+end exports('RemoveLocalEntityInteraction', api.removeLocalEntityInteraction)
+
+function api.removeModelInteraction(model, id)
+    if model and id and modelInteractions[model] then
+        for i = 1, #modelInteractions[model] do
+            local interaction = modelInteractions[model][i]
+
+            print(interaction.id, id)
+            if interaction.id == id then
+
+                print("id exsist")
+                removeFilteredInteraction(interaction)
+                table.remove(modelInteractions[model], i)
+                return
+            end
+        end
+    end
+end exports('RemoveModelInteraction', api.removeModelInteraction)
+
+function api.removeEntityInteraction(netId, id)
+    if netId and id and netInteractions[netId] then
+        for i = 1, #netInteractions[netId] do
+            local interaction = netInteractions[netId][i]
+
+            if interaction.id == id then
+                removeFilteredInteraction(interaction)
+                table.remove(netInteractions[netId], i)
+                return
+            end
+        end
+    end
+end exports('RemoveEntityInteraction', api.removeEntityInteraction)
+
+function api.removeGlobalVehicleInteraction(id)
+    if id then
+        for i = 1, #globalVehicleInteractions do
+            local interaction = globalVehicleInteractions[i]
+
+            if interaction.id == id then
+                removeFilteredInteraction(interaction)
+                table.remove(globalVehicleInteractions, i)
+                return
+            end
+        end
+    end
+end exports('RemoveGlobalVehicleInteraction', api.removeGlobalVehicleInteraction)
 
 ---@param id number : The id of the interaction to remove the option from
 ---@param name? string : The name of the option to remove
