@@ -628,9 +628,49 @@ AddEventHandler('onClientResourceStop', function(resource)
         local interaction = interactions[i]
 
         if interaction.resource == resource then
-            api.removeInteraction(interaction.id)
+            table.remove(interactions, i)
         end
     end
+
+    for i = 1, #globalVehicleInteractions do
+        local interaction = globalVehicleInteractions[i]
+
+        if interaction.resource == resource then
+            table.remove(globalVehicleInteractions, i)
+        end
+    end
+
+    for entity, data in pairs(entityInteractions) do
+        for i = #data, 1, -1 do
+            local interaction = data[i]
+
+            if interaction.resource == resource then
+                table.remove(entityInteractions[entity], i)
+            end
+        end
+    end
+
+    for model, data in pairs(modelInteractions) do
+        for i = #data, 1, -1 do
+            local interaction = data[i]
+
+            if interaction.resource == resource then
+                table.remove(modelInteractions[model], i)
+            end
+        end
+    end
+
+    for netId, data in pairs(netInteractions) do
+        for i = #data, 1, -1 do
+            local interaction = data[i]
+
+            if interaction.resource == resource then
+                table.remove(netInteractions[netId], i)
+            end
+        end
+    end
+
+    filterInteractions()
 end)
 
 return api
