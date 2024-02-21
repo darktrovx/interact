@@ -11,8 +11,10 @@ repository 'https://github.com/darktrovx/interact'
 files {
     'client/interactions.lua',
     'client/utils.lua',
+    'client/entities.lua',
     'shared/settings.lua',
     'shared/log.lua',
+    'bridge/**/client.lua',
     'assets/**/*.png'
 }
 
@@ -22,9 +24,11 @@ shared_scripts {
 }
 
 client_scripts {
+    'bridge/init.lua',
     'client/textures.lua',
     'client/interacts.lua',
-    'client/raycast.lua'
+    'client/raycast.lua',
+    'client/defaults.lua',
 }
 server_scripts {
     'server/main.lua',

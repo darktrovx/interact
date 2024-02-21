@@ -1,11 +1,3 @@
-CurrentTarget = nil
-
-local StartShapeTestSweptSphere = StartShapeTestSweptSphere
-local GetShapeTestResult = GetShapeTestResult
-local GetPedBoneCoords = GetPedBoneCoords
-local GetGameplayCamRot = GetGameplayCamRot
-local GetEntityType = GetEntityType
-
 local function getForwardVector(rotation)
     local rot = (math.pi / 180.0) * rotation
     return vector3(-math.sin(rot.z) * math.abs(math.cos(rot.x)), math.cos(rot.z) * math.abs(math.cos(rot.x)), math.sin(rot.x))
@@ -16,11 +8,10 @@ local function rayCast(origin, target, options, ignoreEntity, radius)
     return GetShapeTestResult(handle)
 end
 
-local function entityInFrontOfPlayer(distance, radius, _, ignoreEntity)
-    distance = distance or 3.0
+local function entityInFrontOfPlayer(distance, radius, ignoreEntity)
     local originCoords = GetPedBoneCoords(cache.ped, 31086, 0, 0, 0)
     local forwardVectors = getForwardVector(GetGameplayCamRot(2))
-    local forwardCoords = originCoords + (forwardVectors * distance)
+    local forwardCoords = originCoords + (forwardVectors * (distance or 3.0))
 
     if not forwardVectors then return end
 
@@ -33,18 +24,9 @@ local function entityInFrontOfPlayer(distance, radius, _, ignoreEntity)
     return targetEntity, entityType
 end
 
-CreateThread(function()
-    while true do
-        Wait(250)
-        local entity, entityType
-        pcall(function() entity, entityType, _ = entityInFrontOfPlayer(3.0, 0.2, 286, cache.ped) end)
-        if entity and entityType ~= 0 then
-            if entity ~= CurrentTarget then
-                CurrentTarget = entity
-            end
-        elseif CurrentTarget then
-            CurrentTarget = nil
-        end
+return function()
+    local entity, entityType
+    pcall(function() entity, entityType = entityInFrontOfPlayer(3.0, 0.2, cache.ped) end)
 
-    end
-end)
+    return entity and entityType ~= 0 and entity or nil
+end

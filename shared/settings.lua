@@ -6,7 +6,7 @@
 
 return {
     Debug = GetConvar('debug', 'false') == 'true' and true or false, -- Enable / Disable debug mode
-    Style = 'gold_circle', -- gold_circle (default), blue_circle, green_square, glitch 
+    Style = 'gold_circle', -- gold_circle (default), blue_circle, green_square, glitch
     Textures = { -- Do not change
         pin = 'pin',
         interact = 'interact',
@@ -20,46 +20,5 @@ return {
         onNuiFocus = true, -- Disable interactions while NUI is focused
         onVehicle = true, -- Disable interactions while in a vehicle
         onHandCuff = true, -- Disable interactions while handcuffed
-    },
-
-    -- Nearby object distance check.
-    nearbyObjectDistance = 20.0, -- Keep it at 15.0 at minimum.
-    nearbyVehicleDistance = 4.0,
-
-    vehicleBoneDefaults = {
-        enabled = true,
-        bones = {
-            ['boot'] = {
-                distance = 3.0,
-                interactDst = 1.5,
-                offset = vec3(0.0, 1.0, 0.0),
-                options = {
-                    {
-                        name = 'interact:trunk',
-                        label = 'Trunk',
-                        action = function(entity)
-
-                            if GetVehicleDoorLockStatus(entity) ~= 1 then
-                                return lib.notify({ type = 'error', title = 'The trunk is locked.' })
-                            end
-
-                            if GetVehicleDoorAngleRatio(entity, 5) <= 0.0  then
-                                return lib.notify({ type = 'error', title = 'the trunk is not open' })
-                            end
-
-                            local plate = GetVehicleNumberPlateText(entity)
-                            local invId = 'trunk'..plate
-                            local coords = GetEntityCoords(entity)
-                        
-                            TaskTurnPedToFaceCoord(cache.ped, coords.x, coords.y, coords.z, 0)
-                        
-                            if not exports.ox_inventory:openInventory('trunk', { id = invId, netid = NetworkGetNetworkIdFromEntity(entity), entityid = entity, door = 5 }) then return end
-                        end
-                    }
-                }
-
-            }
-        }
-
     },
 }

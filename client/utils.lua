@@ -1,5 +1,4 @@
-local settings = require 'shared.settings'
-local textures = settings.Textures
+local textures = require 'shared.settings'.Textures
 local log = require 'shared.log'
 
 local SetTextScale = SetTextScale
@@ -42,13 +41,18 @@ function utils.getOptionsWidth(options)
         log:error('This function is not available on server side')
         return
     end
-    local width = 0.0
-    for _, data in pairs(options) do
-        local factor = (string.len(data.label)) / 370
-        local newWidth = 0.03 + factor
 
-        if newWidth > width then
-            width = newWidth
+    local width = 0.0
+
+    if options and table.type(options) == 'array' then
+        for i = 1, #options do
+            local data = options[i]
+            local factor = (string.len(data.label)) / 370
+            local newWidth = 0.03 + factor
+
+            if newWidth > width then
+                width = newWidth
+            end
         end
     end
 
@@ -61,17 +65,20 @@ function utils.getCoordsFromInteract(interaction)
             if interaction.bone then
                 return GetEntityBonePosition_2(interaction.entity, GetEntityBoneIndexByName(interaction.entity, interaction.bone))
             elseif interaction.model then
-                return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
+                local offset = interaction.offset or vec3(0.0, 0.0, 0.0)
+
+                return GetOffsetFromEntityInWorldCoords(interaction.entity, offset.x, offset.y, offset.z)
             else
                 if IsEntityAPed(interaction.entity) then
-                    if interaction.offset and interaction.offset ~= vec3(0.0, 0.0, 0.0) then
+                    if interaction.offset then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
                     return GetEntityBonePosition_2(interaction.entity, 0) -- SKEL_ROOT
                 else
-                    if interaction.offset and interaction.offset ~= vec3(0.0, 0.0, 0.0) then
+                    if interaction.offset then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
+
                     return GetEntityCoords(interaction.entity)
                 end
             end
