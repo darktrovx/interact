@@ -35,7 +35,7 @@ local function CreateInteractions()
         local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
         if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
-            if i == 1 and (interaction.curDist <= interaction.interactDst) and (interaction.entity and {(interaction.entity == CurrentTarget)} or {true})[1] then
+            if i == 1 and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget) then
                 local options = interaction.options
 
                 if currentInteraction ~= interaction.id then
@@ -64,7 +64,7 @@ local function CreateInteractions()
 
                     if option then
                         if option.action then
-                            pcall(function() option.action(interaction.entity, interaction.coords, option.args) end) 
+                            pcall(function() option.action(interaction.entity, interaction.coords, option.args) end)
                         elseif option.serverEvent then
                             TriggerServerEvent(option.serverEvent, option.args)
                         elseif option.event then
