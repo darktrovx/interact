@@ -494,6 +494,7 @@ local function addGlobalVehicleData(interaction, options, playercoords)
     if vehicleAmount > 0 then
         local amount = #options
 
+
         for j = 1, vehicleAmount do
             interaction.entity = vehicles[j]
 
