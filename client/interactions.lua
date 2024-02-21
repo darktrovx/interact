@@ -207,6 +207,12 @@ function api.addEntityInteraction(data)
         end
     end
 
+    if NetworkDoesNetworkIdExist(netId) then
+        if not Entity(NetworkGetEntityFromNetworkId(netId)).state.hasInteractOptions then
+            TriggerServerEvent('interact:setEntityHasOptions', netId)
+        end
+    end
+
     if not verifyInteraction(data) then
         return
     end
@@ -276,7 +282,7 @@ end exports('AddGlobalVehicleInteraction', api.addGlobalVehicleInteraction)
 ---@param data table : { name, entity[number|string], bone[string], options, distance, interactDst, groups }
 ---@return number | nil : The id of the interaction
 -- Add an interaction point on a networked entity's bone
-function api.addEntityBoneInteraction(data)
+function api.addEntityBoneInteraction()
     lib.print.warn('addEntityBoneInteraction is deprecated, use AddEntityInteraction or AddLocalEntityInteraction instead')
 end exports('AddEntityBoneInteraction', api.addEntityBoneInteraction)
 
@@ -397,6 +403,18 @@ function api.removeEntityInteraction(netId, id)
         end
     end
 end exports('RemoveEntityInteraction', api.removeEntityInteraction)
+
+RegisterNetEvent('interact:removeEntity', function(data)
+    for i = 1, #data do
+        local netId = data[i]
+
+        if netInteractions[netId] then
+            netInteractions[netId] = nil
+        end
+    end
+
+    filterInteractions()
+end)
 
 function api.removeGlobalVehicleInteraction(id)
     if id then
