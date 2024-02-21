@@ -486,7 +486,10 @@ local function getInteractionOptions(interaction)
     if amount > 0 then
         for j = 1, amount do
             local option = interaction.options[j]
-            if canInteract(option, interaction) then
+
+            local success, result = pcall(canInteract, option, interaction)
+
+            if success and result then
                 added += 1
                 currentOptions[added] = option
             end
