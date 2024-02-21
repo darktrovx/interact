@@ -152,7 +152,7 @@ end exports('AddInteraction', api.addInteraction)
 ---@return string | nil : The id of the interaction
 -- Add an interaction point on a local (client side) entity
 function api.addLocalEntityInteraction(data)
-    local entity = data.entity
+    local entity = data and data.entity
 
     if not entity then
         return log:error('Entity is required to add an interaction')
@@ -221,6 +221,7 @@ function api.addEntityInteraction(data)
         name = data.name or ('interaction:%s'):format(id),
         width = utils.getOptionsWidth(data.options),
         netId = netId,
+        bone = data.bone,
         options = data.options,
         distance = data.distance or 10.0,
         interactDst = data.interactDst or 1.0,
@@ -347,22 +348,8 @@ exports('RemoveInteraction', api.removeInteraction)
 
 ---@param entity number : The entity to remove the interaction from
 -- Remove an interaction point by entity.
-function api.removeInteractionByEntity(entity)
+function api.removeInteractionByEntity()
     lib.print.warn('removeInteractionByEntity is deprecated, use RemoveLocalEntityInteraction instead')
-
-    local changed = false
-    for i = #interactions, 1, -1 do
-        local interaction = interactions[i]
-
-        if interaction.entity == entity then
-            table.remove(interactions, i)
-            changed = true
-        end
-    end
-
-    if changed then
-        filterInteractions()
-    end
 end exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
 
 function api.removeLocalEntityInteraction(entity, id)
