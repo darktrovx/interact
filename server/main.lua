@@ -18,7 +18,7 @@ CreateThread(function()
         Wait(10000)
 
         for netId, entity in pairs(entityStates) do
-            if not DoesEntityExist(entity) or not entity.state.hasInteractOptions then
+            if not DoesEntityExist(entity.__data) or not entity.state.hasInteractOptions then
                 entityStates[netId] = nil
                 num += 1
 
