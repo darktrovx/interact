@@ -68,7 +68,7 @@ local function CreateInteractions()
                         elseif option.serverEvent then
                             TriggerServerEvent(option.serverEvent, option.args)
                         elseif option.event then
-                            TriggerEvent(option.event, option)
+                            TriggerEvent(option.event, option.args)
                         end
                     end
                 end
