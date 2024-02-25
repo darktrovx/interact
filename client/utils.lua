@@ -108,7 +108,7 @@ function utils.drawOption(coords, text, spriteDict, spriteName, row, width, show
     if showDot then
         local newSpritename = spriteName == textures.selected and textures.select_opt or textures.unselect_opt
         SetScriptGfxAlignParams(0.018, row * 0.03 - 0.015, 0.0, 0.0)
-        DrawSprite(spriteDict, newSpritename, 0.0, 0.014, 0.01, 0.02, 0.0, 255, 255, 255, 255)
+        DrawSprite(spriteDict, newSpritename, 0.0, 0.014, 0.011, 0.02, 0.0, 255, 255, 255, 255)
         ResetScriptGfxAlign()
     end
 
