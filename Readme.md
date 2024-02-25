@@ -55,6 +55,9 @@ exports.interact:AddInteraction({
     interactDst = 1.0, -- optional
     id = 'myCoolUniqueId', -- needed for removing interactions
     name = 'interactionName', -- optional
+    groups = {
+        ['police'] = 2, -- Jobname | Job grade
+    }
     options = {
          {
             label = 'Hello World!',
@@ -71,8 +74,35 @@ exports.interact:AddLocalEntityInteraction({
     id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
+    ignoreLos = false -- optional ignores line of sight
     offset = vec3(0.0, 0.0, 0.0), -- optional
     bone = 'engine', -- optional
+    groups = {
+        ['police'] = 2, -- Jobname | Job grade
+    }
+    options = {
+        {
+            label = 'Hello World!',
+            action = function(entity, coords, args)
+                print(entity, coords, json.encode(args))
+            end,
+        },
+    }
+})
+
+-- Add an interaction point on a networked entity
+exports.interact:AddEntityInteraction({
+    netId = entityNetIdHere,
+    name = 'interactionName', -- optional
+    id = 'myCoolUniqueId', -- needed for removing interactions
+    distance = 8.0, -- optional
+    interactDst = 1.0, -- optional
+    ignoreLos = false -- optional ignores line of sight
+    offset = vec3(0.0, 0.0, 0.0), -- optional
+    bone = 'engine', -- optional
+    groups = {
+        ['police'] = 2, -- Jobname | Job grade
+    }
     options = {
         {
             label = 'Hello World!',
@@ -104,26 +134,6 @@ exports.interact:AddGlobalVehicleInteraction({
 })
 
 
--- Add an interaction point on a networked entity
-exports.interact:AddInteractionEntity({
-    netId = entityNetIdHere,
-    name = 'interactionName', -- optional
-    id = 'myCoolUniqueId', -- needed for removing interactions
-    distance = 8.0, -- optional
-    interactDst = 1.0, -- optional
-    offset = vec3(0.0, 0.0, 0.0), -- optional
-    bone = 'engine', -- optional
-    options = {
-        {
-            label = 'Hello World!',
-            action = function(entity, coords, args)
-                print(entity, coords, json.encode(args))
-            end,
-        },
-    }
-})
-
-
 -- Add interaction(s) to a list of models
 exports.interact:AddModelInteraction({
     model = 'modelName',
@@ -133,6 +143,9 @@ exports.interact:AddModelInteraction({
     id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
+    groups = {
+        ['police'] = 2, -- Jobname | Job grade
+    }
     options = {
         {
             label = 'Hello World!',
