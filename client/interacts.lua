@@ -23,8 +23,8 @@ local currentSelection = 0
 local currentInteraction = 0
 local CurrentTarget = 0
 
-local function createOption(coords, option, id, width)
-    utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, true)
+local function createOption(coords, option, id, width, showDot)
+    utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, showDot)
 end
 
 local nearby, nearbyAmount = {}, 0
@@ -50,7 +50,7 @@ local function CreateInteractions()
 
                 local optionAmount = #options
                 for j = 1, optionAmount do
-                    createOption(coords, options[j], j, interaction.width)
+                    createOption(coords, options[j], j, interaction.width, optionAmount > 1)
                 end
 
                 if currentSelection ~= 1 and (IsControlJustPressed(0, 172) or IsControlJustPressed(0, 15)) then
