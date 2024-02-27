@@ -36,7 +36,7 @@ Server Events
         print(entity, coords, json.encode(args))
     end,
     serverEvent = "server:Event",
-    event = "client:Event"
+    event = "client:Event",
     args = {
         value1 = 'foo',
         [2] = 'bar',
@@ -57,7 +57,7 @@ exports.interact:AddInteraction({
     name = 'interactionName', -- optional
     groups = {
         ['police'] = 2, -- Jobname | Job grade
-    }
+    },
     options = {
          {
             label = 'Hello World!',
@@ -74,12 +74,12 @@ exports.interact:AddLocalEntityInteraction({
     id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
-    ignoreLos = false -- optional ignores line of sight
+    ignoreLos = false, -- optional ignores line of sight
     offset = vec3(0.0, 0.0, 0.0), -- optional
     bone = 'engine', -- optional
     groups = {
         ['police'] = 2, -- Jobname | Job grade
-    }
+    },
     options = {
         {
             label = 'Hello World!',
@@ -97,12 +97,12 @@ exports.interact:AddEntityInteraction({
     id = 'myCoolUniqueId', -- needed for removing interactions
     distance = 8.0, -- optional
     interactDst = 1.0, -- optional
-    ignoreLos = false -- optional ignores line of sight
+    ignoreLos = false, -- optional ignores line of sight
     offset = vec3(0.0, 0.0, 0.0), -- optional
     bone = 'engine', -- optional
     groups = {
         ['police'] = 2, -- Jobname | Job grade
-    }
+    },
     options = {
         {
             label = 'Hello World!',
@@ -122,7 +122,7 @@ exports.interact:AddGlobalVehicleInteraction({
     bone = 'engine', -- optional
     groups = {
         ['police'] = 2, -- Jobname | Job grade
-    }
+    },
     options = {
         {
             label = 'Hello World!',
@@ -145,7 +145,7 @@ exports.interact:AddModelInteraction({
     interactDst = 1.0, -- optional
     groups = {
         ['police'] = 2, -- Jobname | Job grade
-    }
+    },
     options = {
         {
             label = 'Hello World!',
