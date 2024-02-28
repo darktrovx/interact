@@ -347,7 +347,7 @@ function api.removeInteraction(id)
         for i = 1, #interactions do
             local interaction = interactions[i]
 
-            if interaction.id == id then
+            if interaction?.id == id then
                 removeFilteredInteraction(interaction)
                 table.remove(interactions, i)
             end
