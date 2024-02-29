@@ -85,7 +85,7 @@ local function CreateInteractions()
 
             else
                 SetDrawOrigin(coords.x, coords.y, coords.z + 0.05)
-                DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, currentAlpha)
+                DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, isPrimary and currentAlpha or 255)
             end
 
             ClearDrawOrigin()
