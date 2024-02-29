@@ -35,66 +35,74 @@ local nearby, nearbyAmount = {}, 0
 local function CreateInteractions()
     for i = 1, nearbyAmount do
         local interaction = nearby[i]
-        if not interaction then return end
-        local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
-        local isPrimary = i == 1
+        if interaction then
+            local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
-        if isPrimary and currentInteraction ~= interaction.id then
-            currentInteraction = interaction.id
-            currentAlpha = 255
-            currentSelection = 1
-        end
+            local isPrimary = i == 1
 
-        if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
-            local isClose = isPrimary and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget)
-            if isPrimary and currentAlpha < 0 then
-                local options = interaction.options
-
-                local alpha = currentAlpha * -1
-
-                SetScriptGfxAlignParams(0.0, 0.0, 0.0, 0.0)
-                SetDrawOrigin(coords.x, coords.y, coords.z)
-                DrawSprite('interactions_txd', interact, 0, 0, 0.0185, 0.03333333333333333, 0, 255, 255, 255, alpha)
-                ResetScriptGfxAlign()
-
-                local optionAmount = #options
-                for j = 1, optionAmount do
-                    createOption(coords, options[j], j, interaction.width, optionAmount > 1, alpha)
-                end
-
-                if currentSelection ~= 1 and (IsControlJustPressed(0, 172) or IsControlJustPressed(0, 15)) then
-                    currentSelection -= 1
-                elseif currentSelection ~= optionAmount and (IsControlJustPressed(0, 173) or IsControlJustPressed(0, 14)) then
-                    currentSelection += 1
-                end
-
-                if IsControlJustPressed(0, 38) and isClose then
-                    local option = options[currentSelection]
-
-                    if option then
-                        if option.action then
-                            pcall(option.action, interaction.entity, interaction.coords, option.args)
-                        elseif option.serverEvent then
-                            TriggerServerEvent(option.serverEvent, option.args)
-                        elseif option.event then
-                            TriggerEvent(option.event, option)
-                        end
-                    end
-                end
-
-            else
-                SetDrawOrigin(coords.x, coords.y, coords.z + 0.05)
-                DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, isPrimary and currentAlpha or 255)
+            if isPrimary and currentInteraction ~= interaction.id then
+                currentInteraction = interaction.id
+                currentAlpha = 255
+                currentSelection = 1
             end
 
-            ClearDrawOrigin()
+            if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
+                local isClose = isPrimary and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget)
+                if isPrimary and currentAlpha < 0 then
+                    local options = interaction.options
 
-            if isPrimary then
-                if isClose then
-                    currentAlpha = math_max(-255, currentAlpha - 10)
+                    local alpha = currentAlpha * -1
+
+                    SetScriptGfxAlignParams(0.0, 0.0, 0.0, 0.0)
+                    SetDrawOrigin(coords.x, coords.y, coords.z)
+                    DrawSprite('interactions_txd', interact, 0, 0, 0.0185, 0.03333333333333333, 0, 255, 255, 255, alpha)
+                    ResetScriptGfxAlign()
+
+                    local optionAmount = #options
+                    local showDot = optionAmount > 1
+                    for j = 1, optionAmount do
+                        createOption(coords, options[j], j, interaction.width, showDot, alpha)
+                    end
+
+                    -- Some scenarios where we remove the second selection, we run into the issue of not wanting to select the first option again
+                    if currentSelection > optionAmount then
+                        currentSelection = optionAmount
+                    end
+
+                    if currentSelection ~= 1 and (IsControlJustPressed(0, 172) or IsControlJustPressed(0, 15)) then
+                        currentSelection -= 1
+                    elseif currentSelection ~= optionAmount and (IsControlJustPressed(0, 173) or IsControlJustPressed(0, 14)) then
+                        currentSelection += 1
+                    end
+
+                    if IsControlJustPressed(0, 38) and isClose then
+                        local option = options[currentSelection]
+
+                        if option then
+                            if option.action then
+                                pcall(option.action, interaction.entity, interaction.coords, option.args)
+                            elseif option.serverEvent then
+                                TriggerServerEvent(option.serverEvent, option.args)
+                            elseif option.event then
+                                TriggerEvent(option.event, option)
+                            end
+                        end
+                    end
+
                 else
-                    currentAlpha = math_min(255, currentAlpha + 10)
+                    SetDrawOrigin(coords.x, coords.y, coords.z + 0.05)
+                    DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, isPrimary and currentAlpha or 255)
+                end
+
+                ClearDrawOrigin()
+
+                if isPrimary then
+                    if isClose then
+                        currentAlpha = math_max(-255, currentAlpha - 10)
+                    else
+                        currentAlpha = math_min(255, currentAlpha + 10)
+                    end
                 end
             end
         end
