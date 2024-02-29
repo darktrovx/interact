@@ -82,16 +82,16 @@ local function CreateInteractions()
 
             else
                 SetDrawOrigin(coords.x, coords.y, coords.z + 0.05)
-                DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, 255)
+                DrawSprite('interactions_txd', pin, 0, 0, 0.010, 0.025, 0, 255, 255, 255, currentAlpha)
             end
 
             ClearDrawOrigin()
 
             if isPrimary then
                 if isClose then
-                    currentAlpha = math.max(-255, currentAlpha - 6)
+                    currentAlpha = math.max(-255, currentAlpha - 10)
                 else
-                    currentAlpha = 255
+                    currentAlpha = math.min(255, currentAlpha + 10)
                 end
             end
         end
