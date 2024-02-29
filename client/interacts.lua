@@ -28,6 +28,9 @@ local function createOption(coords, option, id, width, showDot, alpha)
     utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, showDot, alpha)
 end
 
+local math_max = math.max
+local math_min = math.min
+
 local nearby, nearbyAmount = {}, 0
 local function CreateInteractions()
     for i = 1, nearbyAmount do
@@ -45,7 +48,7 @@ local function CreateInteractions()
 
         if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
             local isClose = isPrimary and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget)
-            if isClose and currentAlpha < 0 then
+            if isPrimary and currentAlpha < 0 then
                 local options = interaction.options
 
                 local alpha = currentAlpha * -1
@@ -66,7 +69,7 @@ local function CreateInteractions()
                     currentSelection += 1
                 end
 
-                if IsControlJustPressed(0, 38) then
+                if IsControlJustPressed(0, 38) and isClose then
                     local option = options[currentSelection]
 
                     if option then
@@ -89,9 +92,9 @@ local function CreateInteractions()
 
             if isPrimary then
                 if isClose then
-                    currentAlpha = math.max(-255, currentAlpha - 10)
+                    currentAlpha = math_max(-255, currentAlpha - 10)
                 else
-                    currentAlpha = math.min(255, currentAlpha + 10)
+                    currentAlpha = math_min(255, currentAlpha + 10)
                 end
             end
         end
