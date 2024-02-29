@@ -74,7 +74,7 @@ local function CreateInteractions()
 
                     if option then
                         if option.action then
-                            pcall(function() option.action(interaction.entity, interaction.coords, option.args) end)
+                            pcall(option.action, interaction.entity, interaction.coords, option.args)
                         elseif option.serverEvent then
                             TriggerServerEvent(option.serverEvent, option.args)
                         elseif option.event then
