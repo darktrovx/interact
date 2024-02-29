@@ -22,9 +22,10 @@ local selected, unselected, interact, pin = settings.Textures.selected, settings
 local currentSelection = 0
 local currentInteraction = 0
 local CurrentTarget = 0
+local currentAlpha = 255
 
-local function createOption(coords, option, id, width, showDot)
-    utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, showDot)
+local function createOption(coords, option, id, width, showDot, alpha)
+    utils.drawOption(coords, option.label, 'interactions_txd', currentSelection == id and selected or unselected, id - 1, width, showDot, alpha)
 end
 
 local nearby, nearbyAmount = {}, 0
@@ -34,23 +35,29 @@ local function CreateInteractions()
         if not interaction then return end
         local coords = interaction.coords or utils.getCoordsFromInteract(interaction)
 
+        local isPrimary = i == 1
+
+        if isPrimary and currentInteraction ~= interaction.id then
+            currentInteraction = interaction.id
+            currentAlpha = 255
+            currentSelection = 1
+        end
+
         if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
-            if i == 1 and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget) then
+            local isClose = isPrimary and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget)
+            if isClose and currentAlpha < 0 then
                 local options = interaction.options
 
-                if currentInteraction ~= interaction.id then
-                    currentInteraction = interaction.id
-                    currentSelection = 1
-                end
+                local alpha = currentAlpha * -1
 
                 SetScriptGfxAlignParams(0.0, 0.0, 0.0, 0.0)
                 SetDrawOrigin(coords.x, coords.y, coords.z)
-                DrawSprite('interactions_txd', interact, 0, 0, 0.0185, 0.03333333333333333, 0, 255, 255, 255, 255)
+                DrawSprite('interactions_txd', interact, 0, 0, 0.0185, 0.03333333333333333, 0, 255, 255, 255, alpha)
                 ResetScriptGfxAlign()
 
                 local optionAmount = #options
                 for j = 1, optionAmount do
-                    createOption(coords, options[j], j, interaction.width, optionAmount > 1)
+                    createOption(coords, options[j], j, interaction.width, optionAmount > 1, alpha)
                 end
 
                 if currentSelection ~= 1 and (IsControlJustPressed(0, 172) or IsControlJustPressed(0, 15)) then
@@ -79,6 +86,14 @@ local function CreateInteractions()
             end
 
             ClearDrawOrigin()
+
+            if isPrimary then
+                if isClose then
+                    currentAlpha = math.max(-255, currentAlpha - 6)
+                else
+                    currentAlpha = 255
+                end
+            end
         end
     end
 end

@@ -88,7 +88,7 @@ function utils.getCoordsFromInteract(interaction)
     return vec3(0.0, 0.0, 0.0)
 end
 
-function utils.drawOption(coords, text, spriteDict, spriteName, row, width, showDot)
+function utils.drawOption(coords, text, spriteDict, spriteName, row, width, showDot, alpha)
     SetScriptGfxAlignParams((showDot == true and 0.03 or 0.018) + (width / 2), row * 0.03 - 0.0125, 0.0, 0.0)
     SetTextScale(0, 0.3)
     SetTextFont(4)
@@ -102,13 +102,13 @@ function utils.drawOption(coords, text, spriteDict, spriteName, row, width, show
     ResetScriptGfxAlign()
 
     SetScriptGfxAlignParams((showDot == true and 0.03 or 0.018) + (width / 2), row * 0.03 - 0.015, 0.0, 0.0)
-    DrawSprite(spriteDict, spriteName, 0.0, 0.014, width, 0.025, 0.0, 255, 255, 255, 255)
+    DrawSprite(spriteDict, spriteName, 0.0, 0.014, width, 0.025, 0.0, 255, 255, 255, alpha)
     ResetScriptGfxAlign()
 
     if showDot then
         local newSpritename = spriteName == textures.selected and textures.select_opt or textures.unselect_opt
         SetScriptGfxAlignParams(0.018, row * 0.03 - 0.015, 0.0, 0.0)
-        DrawSprite(spriteDict, newSpritename, 0.0, 0.014, 0.011, 0.02, 0.0, 255, 255, 255, 255)
+        DrawSprite(spriteDict, newSpritename, 0.0, 0.014, 0.011, 0.02, 0.0, 255, 255, 255, alpha)
         ResetScriptGfxAlign()
     end
 
