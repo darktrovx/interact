@@ -1,10 +1,6 @@
-local file = ('imports/%s.lua'):format('client')
-local import = LoadResourceFile('ox_core', file)
-local chunk = assert(load(import, ('@@ox_core/%s'):format(file)))
+if not lib.checkDependency('ox_core', '0.21.3', true) then return end
 
-chunk()
-
-local Player = {}
+local Ox = require '@ox_core.lib.init'
 
 RegisterNetEvent('ox:setGroup', function(name, grade)
     Player.group[name] = grade
@@ -13,8 +9,10 @@ RegisterNetEvent('ox:setGroup', function(name, grade)
 end)
 
 AddEventHandler('ox:playerLoaded', function()
+    local currentPlayer = Ox.GetPlayer()
+
     Player = {
-        group = Ox.GetPlayerData().groups
+        group = currentPlayer.getGroups()
     }
 
     TriggerEvent('interact:groupsChanged', Player.group)
@@ -26,12 +24,14 @@ AddEventHandler('ox:playerLogout', function()
 end)
 
 AddEventHandler('onResourceStart', function(resource)
-   if resource == GetCurrentResourceName() then
+    if resource == GetCurrentResourceName() then
         Wait(500)
+        local currentPlayer = Ox.GetPlayer()
+
         Player = {
-            group = Ox.GetPlayerData().groups
+            group = currentPlayer.getGroups()
         }
 
         TriggerEvent('interact:groupsChanged', Player.group)
-   end
+    end
 end)
