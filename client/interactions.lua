@@ -490,14 +490,9 @@ local function getInteractionOptions(interaction)
             local success, result = pcall(canInteract, option, interaction)
 
             if success and result then
-                if option.job then
-                    if hasGroup(option.job) then
+                if not option.job or hasGroup(option.job) then
                         added += 1
                         currentOptions[added] = option
-                    end
-                else
-                    added += 1
-                    currentOptions[added] = option
                 end
             end
         end
