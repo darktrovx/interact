@@ -7,7 +7,6 @@ local api = require 'client.interactions'
 api.addGlobalVehicleInteraction({
     distance = 5.0,
     interactDst = 1.5,
-    offset = vec3(0.0, 1.0, 0.0),
     bone = 'boot',
     id = 'interact:defaultTrunk',
     options = {
