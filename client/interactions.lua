@@ -13,6 +13,7 @@ local entityInteractions = {}
 local modelInteractions = {}
 local netInteractions = {}
 local globalVehicleInteractions = {}
+local globalPlayerInteraction = {}
 local myGroups = {}
 
 -- Used for backwards compatibility, to ensure we return the ID of the interaction
@@ -105,6 +106,7 @@ local function filterInteractions()
     -- Filter out the other interactions that are not local/net entitiy interactions
     filterOtherInteractions(newInteractions, interactions)
     filterOtherInteractions(newInteractions, globalVehicleInteractions)
+    filterOtherInteractions(newInteractions, globalPlayerInteraction)
 
     filteredInteractions = newInteractions
 end
@@ -278,6 +280,38 @@ function api.addGlobalVehicleInteraction(data)
     return id
 end exports('AddGlobalVehicleInteraction', api.addGlobalVehicleInteraction)
 
+function api.addGlobalPlayerInteraction(data)
+    if not verifyInteraction(data) then
+        return
+    end
+
+    local id = data.id or generateUUID()
+
+    local dataTable = {
+        id = id,
+        name = data.name or ('interaction:%s'):format(id),
+        options = data.options,
+        distance = data.distance or 10.0,
+        interactDst = data.interactDst or 1.0,
+        offset = data.offset,
+        bone = data.bone,
+        ignoreLos = data.ignoreLos,
+        width = utils.getOptionsWidth(data.options),
+        global = false,
+        globalPlayer = true,
+        groups = data.groups,
+        resource = GetInvokingResource()
+    }
+
+    globalPlayerInteraction[#globalPlayerInteraction + 1] = dataTable
+
+    if not data.groups or hasGroup(data.groups) then
+        filteredInteractions[#filteredInteractions + 1] = dataTable
+    end
+
+    return id
+end exports('addGlobalPlayerInteraction', api.addGlobalPlayerInteraction)
+
 
 ---@param data table : { name, entity[number|string], bone[string], options, distance, interactDst, groups }
 ---@return number | nil : The id of the interaction
@@ -430,6 +464,19 @@ function api.removeGlobalVehicleInteraction(id)
     end
 end exports('RemoveGlobalVehicleInteraction', api.removeGlobalVehicleInteraction)
 
+function api.removeGlobalPlayerInteraction(id)
+    if id then
+        for i = 1, #globalPlayerInteraction do
+            local interaction = globalPlayerInteraction[i]
+
+            if interaction.id == id then
+                removeFilteredInteraction(interaction)
+                table.remove(globalPlayerInteraction, i)
+                return
+            end
+        end
+    end
+end exports('RemoveGlobalPlayerInteraction', api.removeGlobalPlayerInteraction)
 ---@param id number : The id of the interaction to remove the option from
 ---@param name? string : The name of the option to remove
 -- Remove an option from an interaction point by id.
@@ -511,6 +558,7 @@ local function getReturnData(options, distance, interaction)
         interactDst = interaction.interactDst,
         width = interaction.width,
         offset = interaction.offset,
+        serverId = interaction.serverId,
     }
 end
 
@@ -524,6 +572,29 @@ local function addGlobalVehicleData(interaction, options, playercoords)
         for j = 1, vehicleAmount do
             interaction.entity = vehicles[j]
 
+            local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
+
+            if distance <= interaction.distance then
+                local interactOptions, interactionAmount = getInteractionOptions(interaction)
+
+                if interactionAmount > 0 then
+                    amount += 1
+                    options[amount] = getReturnData(interactOptions, distance, interaction)
+                end
+            end
+        end
+    end
+end
+
+local function addGlobalPlayerData(interaction, options, playercoords)
+    local playerAmount, players, serverIds = entities.getEntitiesByType('players')
+    if playerAmount > 0 then
+        local amount = #options
+
+
+        for j = 1, playerAmount do
+            interaction.entity = players[j]
+            interaction.serverId = serverIds[j]
             local distance = #(utils.getCoordsFromInteract(interaction) - playercoords)
 
             if distance <= interaction.distance then
@@ -575,6 +646,12 @@ function api.getNearbyInteractions()
 
             if interaction.global then
                 addGlobalVehicleData(interaction, options, playercoords)
+                amount = #options
+                goto skip
+            end
+
+            if interaction.globalPlayer then
+                addGlobalPlayerData(interaction, options, playercoords)
                 amount = #options
                 goto skip
             end
@@ -640,6 +717,14 @@ AddEventHandler('onClientResourceStop', function(resource)
 
         if interaction.resource == resource then
             table.remove(globalVehicleInteractions, i)
+        end
+    end
+
+    for i = 1, #globalPlayerInteraction do
+        local interaction = globalPlayerInteraction[i]
+
+        if interaction.resource == resource then
+            table.remove(globalPlayerInteraction, i)
         end
     end
 

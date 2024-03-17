@@ -2,6 +2,7 @@ local entities = {}
 local netIds = {}
 local models = {}
 local localEnties = {}
+local playersTable = {}
 
 -- Sub caches are used for caching shit that is run every 250ms in the main loop
 local subCache = {}
@@ -22,6 +23,7 @@ end
 function entities.getEntitiesByType(type)
     local amount = 0
     local entityTable = {}
+    local serverIds = {}
 
     if subCache[type] then
         return #subCache[type], subCache[type]
@@ -39,6 +41,15 @@ function entities.getEntitiesByType(type)
             amount = amount + 1
             entityTable[amount] = v.entity
         end
+    end
+
+    if type == "players" then
+        for k, v in pairs(playersTable) do
+            amount = amount + 1
+            entityTable[amount] = v.entity
+            serverIds[amount] = v.serverId
+        end
+        return amount, entityTable, serverIds
     end
 
     subCache[type] = entityTable
@@ -108,6 +119,49 @@ CreateThread(function()
         buildEntities('CObject', playerCoords)
 
         Wait(2500)
+    end
+end)
+
+RegisterNetEvent('onPlayerDropped', function(serverId)
+    playersTable[serverId] = nil
+end)
+
+RegisterNetEvent('onPlayerJoining', function(serverId)
+    local playerId = GetPlayerFromServerId(serverId)
+
+    local ent = lib.waitFor(function()
+        local ped = GetPlayerPed(playerId)
+        if ped > 0 then return ped end
+    end, '', 10000)
+    
+    playersTable[serverId] = {
+        entity = ent,
+        serverId = serverId,
+        type = "players",
+    }
+end)
+
+AddEventHandler('onResourceStart', function(name)
+    if name == GetCurrentResourceName() then
+        local players = GetActivePlayers()
+
+        for i = 1, #players do
+            local playerId = players[i]
+            local serverId = GetPlayerServerId(playerId)
+            if serverId ~= cache.serverId then 
+                
+                local ent = lib.waitFor(function()
+                    local ped = GetPlayerPed(playerId)
+                    if ped > 0 then return ped end
+                end, '', 10000)
+
+                playersTable[serverId] = {
+                    entity = ent,
+                    serverId = serverId,
+                    type = "players",
+                }
+            end
+        end
     end
 end)
 

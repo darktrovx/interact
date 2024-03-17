@@ -156,6 +156,23 @@ exports.interact:AddModelInteraction({
     }
 })
 
+
+-- Add Interaction(s) to players
+
+exports.interact:addGlobalPlayerInteraction({
+    distance = 5.0,
+    interactDst = 1.5,
+    offset = vec3(0.0, 0.0, 0.0),
+    id = 'interact:actionPlayer',
+    options = {
+        name = 'interact:actionPlayer',
+        label = 'Do Action On Player',
+        action = function(entity, _, _, serverId)
+            print(entity, serverId)
+        end,
+    }
+})
+
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 exports.interact:RemoveInteraction(interactionID)
@@ -178,4 +195,8 @@ exports.interact:RemoveEntityInteraction(netId, interactionID)
 ---@param id number : The id of the interaction to remove
 -- Remove an interaction point by id.
 exports.interact:RemoveGlobalVehicleInteraction(interactionID)
+
+---@param id number : The id of the interaction to remove
+-- Remove an player interaction by id.
+exports.interact:RemoveGlobalPlayerInteraction(interactionID)
 ```
