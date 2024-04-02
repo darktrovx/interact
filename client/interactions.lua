@@ -349,9 +349,8 @@ function api.addModelInteraction(data)
         distance = data.distance or 10,
         interactDst = data.interactDst or 1,
         groups = data.groups,
-        resource = data.resource,
+        resource = GetInvokingResource(),
     }
-
 
     if not data.groups or hasGroup(data.groups) then
         filteredInteractions[#filteredInteractions + 1] = tableData
@@ -743,7 +742,7 @@ AddEventHandler('onClientResourceStop', function(resource)
     for model, data in pairs(modelInteractions) do
         for i = #data, 1, -1 do
             local interaction = data[i]
-
+            print(interaction.resource, resource)
             if interaction.resource == resource then
                 table.remove(modelInteractions[model], i)
             end
