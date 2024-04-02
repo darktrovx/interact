@@ -742,7 +742,6 @@ AddEventHandler('onClientResourceStop', function(resource)
     for model, data in pairs(modelInteractions) do
         for i = #data, 1, -1 do
             local interaction = data[i]
-            print(interaction.resource, resource)
             if interaction.resource == resource then
                 table.remove(modelInteractions[model], i)
             end
