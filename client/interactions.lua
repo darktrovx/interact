@@ -696,7 +696,27 @@ function api.getNearbyInteractions()
             return a.curDist < b.curDist
         end)
     end
+    local removeAmount = 0
+    if amount > 1 then
+        for k, v in pairs(options) do
+            if k ~= 1 then
+                local option = v
+                -- printTable(option, 2)
+                if option.entity == options[1].entity then
+                    -- print(test, option.entity, options[1].entity, i)
+                    options[1].options[#options[1].options + 1] = option.options[1]
+                    
+                    if option.curDist < options[1].curDist then
+                        options[1].curDist = option.curDist
+                    end
+                    options[k] = nil
+                    removeAmount += 1
+                end
+            end
+        end
+    end
 
+    amount -= removeAmount
     return options, amount
 end
 
