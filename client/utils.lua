@@ -33,6 +33,7 @@ end
 
 function utils.getTrunkOffset(entity)
     local min, _ = GetModelDimensions(GetEntityModel(entity))
+
     return GetOffsetFromEntityInWorldCoords(entity, 0.0, min.y - 0.5, 0.0)
 end
 
@@ -64,9 +65,11 @@ function utils.getCoordsFromInteract(interaction)
         if DoesEntityExist(interaction.entity) then
             if interaction.bone then
                 local pos = GetEntityBonePosition_2(interaction.entity, GetEntityBoneIndexByName(interaction.entity, interaction.bone))
+
                 if interaction.offset then
                     pos = GetEntityBonePosition_2(interaction.entity, GetEntityBoneIndexByName(interaction.entity, interaction.bone)) + interaction.offset
                 end
+
                 return pos
             elseif interaction.model then
                 local offset = interaction.offset or vec3(0.0, 0.0, 0.0)
@@ -77,6 +80,7 @@ function utils.getCoordsFromInteract(interaction)
                     if interaction.offset then
                         return GetOffsetFromEntityInWorldCoords(interaction.entity, 0.0 + interaction.offset.x, 0.0 + interaction.offset.y, 0.0 + interaction.offset.z)
                     end
+
                     return GetEntityBonePosition_2(interaction.entity, 0) -- SKEL_ROOT
                 else
                     if interaction.offset then
@@ -97,7 +101,7 @@ function utils.drawOption(coords, text, spriteDict, spriteName, row, width, show
     SetTextScale(0, 0.3)
     SetTextFont(4)
     SetTextColour(255, 255, 255, alpha)
-    BeginTextCommandDisplayText("STRING")
+    BeginTextCommandDisplayText('STRING')
     SetTextCentre(true)
     AddTextComponentSubstringPlayerName(text)
     SetDrawOrigin(coords.x, coords.y, coords.z, 0)

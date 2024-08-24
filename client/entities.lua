@@ -9,6 +9,7 @@ local subCache = {}
 
 function entities.isNetIdNearby(netID)
     local entity = netIds[netID]
+
     return entity and entity.entity
 end
 
@@ -31,24 +32,25 @@ function entities.getEntitiesByType(type)
 
     for k, v in pairs(localEnties) do
         if v.type == type then
-            amount = amount + 1
+            amount += 1
             entityTable[amount] = k
         end
     end
 
     for _, v in pairs(netIds) do
         if v.type == type then
-            amount = amount + 1
+            amount += 1
             entityTable[amount] = v.entity
         end
     end
 
-    if type == "players" then
-        for k, v in pairs(playersTable) do
-            amount = amount + 1
+    if type == 'players' then
+        for _, v in pairs(playersTable) do
+            amount += 1
             entityTable[amount] = v.entity
             serverIds[amount] = v.serverId
         end
+
         return amount, entityTable, serverIds
     end
 
@@ -112,6 +114,7 @@ end
 CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(cache.ped)
+
         clearTables()
 
         buildEntities('CVehicle', playerCoords)
@@ -131,36 +134,42 @@ RegisterNetEvent('onPlayerJoining', function(serverId)
 
     local ent = lib.waitFor(function()
         local ped = GetPlayerPed(playerId)
-        if ped > 0 then return ped end
+
+        if ped > 0 then
+            return ped
+        end
     end, '', 10000)
-    
+
     playersTable[serverId] = {
         entity = ent,
         serverId = serverId,
-        type = "players",
+        type = 'players',
     }
 end)
 
-AddEventHandler('onResourceStart', function(name)
-    if name == GetCurrentResourceName() then
-        local players = GetActivePlayers()
+AddEventHandler('onResourceStart', function(resource)
+    if resource ~= cache.resource then return end
 
-        for i = 1, #players do
-            local playerId = players[i]
-            local serverId = GetPlayerServerId(playerId)
-            if serverId ~= cache.serverId then 
-                
-                local ent = lib.waitFor(function()
-                    local ped = GetPlayerPed(playerId)
-                    if ped > 0 then return ped end
-                end, '', 10000)
+    local players = GetActivePlayers()
 
-                playersTable[serverId] = {
-                    entity = ent,
-                    serverId = serverId,
-                    type = "players",
-                }
-            end
+    for i = 1, #players do
+        local playerId = players[i]
+        local serverId = GetPlayerServerId(playerId)
+
+        if serverId ~= cache.serverId then
+            local ent = lib.waitFor(function()
+                local ped = GetPlayerPed(playerId)
+
+                if ped > 0 then
+                    return ped
+                end
+            end, '', 10000)
+
+            playersTable[serverId] = {
+                entity = ent,
+                serverId = serverId,
+                type = 'players',
+            }
         end
     end
 end)

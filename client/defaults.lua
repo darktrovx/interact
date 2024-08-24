@@ -1,6 +1,4 @@
-if GetConvar('interact_disabledefault', 'false') == 'true' then
-    return
-end
+if GetConvar('interact_disabledefault', 'false') == 'true' then return end
 
 local api = require 'client.interactions'
 
@@ -23,12 +21,11 @@ api.addGlobalVehicleInteraction({
             end
 
             local plate = GetVehicleNumberPlateText(entity)
-            local invId = 'trunk'..plate
             local coords = GetEntityCoords(entity)
 
             TaskTurnPedToFaceCoord(cache.ped, coords.x, coords.y, coords.z, 0)
 
-            if not exports.ox_inventory:openInventory('trunk', { id = invId, netid = NetworkGetNetworkIdFromEntity(entity), entityid = entity, door = 5 }) then return end
+            if not exports.ox_inventory:openInventory('trunk', { id = ('trunk%s'):format(plate), netid = NetworkGetNetworkIdFromEntity(entity), entityid = entity, door = 5 }) then return end
         end,
     }
 })
