@@ -1,10 +1,12 @@
 local function getForwardVector(rotation)
     local rot = (math.pi / 180.0) * rotation
-    return vector3(-math.sin(rot.z) * math.abs(math.cos(rot.x)), math.cos(rot.z) * math.abs(math.cos(rot.x)), math.sin(rot.x))
+
+    return vec3(-math.sin(rot.z) * math.abs(math.cos(rot.x)), math.cos(rot.z) * math.abs(math.cos(rot.x)), math.sin(rot.x))
 end
 
 local function rayCast(origin, target, options, ignoreEntity, radius)
     local handle = StartShapeTestSweptSphere(origin.x, origin.y, origin.z, target.x, target.y, target.z, radius, options, ignoreEntity, 0)
+
     return GetShapeTestResult(handle)
 end
 
@@ -26,7 +28,10 @@ end
 
 return function()
     local entity, entityType
-    pcall(function() entity, entityType = entityInFrontOfPlayer(3.0, 0.2, cache.ped) end)
+
+    pcall(function()
+        entity, entityType = entityInFrontOfPlayer(3.0, 0.2, cache.ped)
+    end)
 
     return entity and entityType ~= 0 and entity or nil
 end

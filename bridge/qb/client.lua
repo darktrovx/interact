@@ -24,6 +24,7 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     local PlayerData = QBCore.Functions.GetPlayerData()
+
     Player = {
         Group = {
             [PlayerData.job.name] = PlayerData.job.grade.level,
@@ -38,6 +39,6 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     Player = table.wipe(Player)
+
     TriggerEvent('interact:groupsChanged', {})
 end)
-

@@ -26,7 +26,6 @@ end)
 
 RegisterNetEvent('esx:onPlayerLogout', function()
     Player = table.wipe(Player)
+
     TriggerEvent('interact:groupsChanged', {})
 end)
-
-return Bridge

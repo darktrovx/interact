@@ -20,6 +20,7 @@ end)
 
 AddEventHandler('ox:playerLogout', function()
     table.wipe(Player)
+
     TriggerEvent('interact:groupsChanged', {})
 end)
 

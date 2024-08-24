@@ -32,6 +32,7 @@ local math_max = math.max
 local math_min = math.min
 
 local nearby, nearbyAmount = {}, 0
+
 local function CreateInteractions()
     for i = 1, nearbyAmount do
         local interaction = nearby[i]
@@ -49,9 +50,9 @@ local function CreateInteractions()
 
             if GetScreenCoordFromWorldCoord(coords.x, coords.y, coords.z) then
                 local isClose = isPrimary and (interaction.curDist <= interaction.interactDst) and (not interaction.entity or interaction.ignoreLos or interaction.entity == CurrentTarget)
+
                 if isPrimary and currentAlpha < 0 then
                     local options = interaction.options
-
                     local alpha = currentAlpha * -1
 
                     SetScriptGfxAlignParams(0.0, 0.0, 0.0, 0.0)
@@ -61,6 +62,7 @@ local function CreateInteractions()
 
                     local optionAmount = #options
                     local showDot = optionAmount > 1
+
                     for j = 1, optionAmount do
                         createOption(coords, options[j], j, interaction.width, showDot, alpha)
                     end
@@ -136,12 +138,15 @@ end
 -- Fast thread
 CreateThread(function ()
     lib.requestStreamedTextureDict('interactions_txd')
+
     while true do
         local wait = 500
+
         if nearbyAmount > 0 and not disableInteraction then
             wait = 0
             CreateInteractions()
         end
+
         Wait(wait)
     end
 end)
@@ -149,9 +154,11 @@ end)
 -- Slow checker thread
 local getCurrentTarget = require 'client.raycast'
 local threadTimer = GetConvarInt('interact_thread', 250)
+
 CreateThread(function()
     while true do
         disableInteraction = isDisabled()
+
         if disableInteraction then
             nearby, nearbyAmount = table.wipe(nearby), 0
             CurrentTarget = 0

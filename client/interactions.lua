@@ -8,7 +8,6 @@ local table_type = table.type
 
 -- CACHE.
 local api = {}
-
 local entityInteractions = {}
 local modelInteractions = {}
 local netInteractions = {}
@@ -20,7 +19,8 @@ local myGroups = {}
 local function generateUUID()
     return ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'):gsub('[xy]', function(c)
         local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-        return string.format('%x', v)
+
+        return ('%x'):format(v)
     end)
 end
 
@@ -34,14 +34,14 @@ local function verifyInteraction(interaction)
     end
 
     -- makes it so you can send a singular object instead of an array
-    if table_type(interaction.options) ~= 'array' then
+    if table.type(interaction.options) ~= 'array' then
         interaction.options = { interaction.options }
     end
 
     -- Translates types of groups into a key value pair for easier checking
     if interaction.groups then
         if type(interaction.groups) == 'string' then
-            interaction.groups = { [interaction.groups] = 0, }
+            interaction.groups = { [interaction.groups] = 0 }
         elseif table_type(interaction.groups) == 'array' then
             for i = 1, #interaction.groups do
                 interaction.groups[interaction.groups[i]] = 0
@@ -121,9 +121,7 @@ end)
 ---@return string | nil : The id of the interaction
 -- Add an interaction point at a set of coords
 function api.addInteraction(data)
-    if not verifyInteraction(data) then
-        return
-    end
+    if not verifyInteraction(data) then return end
 
     local id = data.id or generateUUID()
 
@@ -148,7 +146,8 @@ function api.addInteraction(data)
     end
 
     return id
-end exports('AddInteraction', api.addInteraction)
+end
+exports('AddInteraction', api.addInteraction)
 
 ---@param data table : { name, entity, options, distance, interactDst, groups }
 ---@return string | nil : The id of the interaction
@@ -162,9 +161,7 @@ function api.addLocalEntityInteraction(data)
         return log:error('Invalid entity')
     end
 
-    if not verifyInteraction(data) then
-        return
-    end
+    if not verifyInteraction(data) then return end
 
     if not entityInteractions[entity] then
         entityInteractions[entity] = {}
@@ -192,7 +189,8 @@ function api.addLocalEntityInteraction(data)
     entityInteractions[entity][#entityInteractions[entity] + 1] = tableData
 
     return id
-end exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
+end
+exports('AddLocalEntityInteraction', api.addLocalEntityInteraction)
 
 ---@param data table : { name, netId, options, distance, interactDst, groups }
 ---@return string | nil : The id of the interaction
@@ -203,8 +201,10 @@ function api.addEntityInteraction(data)
     -- If the netId does not exist, we assume it is an entity
     if not netId or not NetworkDoesNetworkIdExist(netId) then
         local entity = data.entity or data.netId
+
         if DoesEntityExist(entity) then
             data.entity = entity
+
             return api.addLocalEntityInteraction(data)
         end
     end
@@ -215,9 +215,7 @@ function api.addEntityInteraction(data)
         end
     end
 
-    if not verifyInteraction(data) then
-        return
-    end
+    if not verifyInteraction(data) then return end
 
     local id = data.id or generateUUID()
 
@@ -247,12 +245,11 @@ function api.addEntityInteraction(data)
     netInteractions[netId][#netInteractions[netId]+1] = dataTable
 
     return id
-end exports('AddEntityInteraction', api.addEntityInteraction)
+end
+exports('AddEntityInteraction', api.addEntityInteraction)
 
 function api.addGlobalVehicleInteraction(data)
-    if not verifyInteraction(data) then
-        return
-    end
+    if not verifyInteraction(data) then return end
 
     local id = data.id or generateUUID()
 
@@ -278,12 +275,11 @@ function api.addGlobalVehicleInteraction(data)
     end
 
     return id
-end exports('AddGlobalVehicleInteraction', api.addGlobalVehicleInteraction)
+end
+exports('AddGlobalVehicleInteraction', api.addGlobalVehicleInteraction)
 
 function api.addGlobalPlayerInteraction(data)
-    if not verifyInteraction(data) then
-        return
-    end
+    if not verifyInteraction(data) then return end
 
     local id = data.id or generateUUID()
 
@@ -310,7 +306,8 @@ function api.addGlobalPlayerInteraction(data)
     end
 
     return id
-end exports('addGlobalPlayerInteraction', api.addGlobalPlayerInteraction)
+end
+exports('addGlobalPlayerInteraction', api.addGlobalPlayerInteraction)
 
 
 ---@param data table : { name, entity[number|string], bone[string], options, distance, interactDst, groups }
@@ -318,7 +315,8 @@ end exports('addGlobalPlayerInteraction', api.addGlobalPlayerInteraction)
 -- Add an interaction point on a networked entity's bone
 function api.addEntityBoneInteraction()
     lib.print.warn('addEntityBoneInteraction is deprecated, use AddEntityInteraction or AddLocalEntityInteraction instead')
-end exports('AddEntityBoneInteraction', api.addEntityBoneInteraction)
+end
+exports('AddEntityBoneInteraction', api.addEntityBoneInteraction)
 
 ---@param data table : { name, modelData table : { model[string], offset[vec3] }, options, distance, interactDst, groups }
 -- Add interaction(s) to a list of models
@@ -359,11 +357,13 @@ function api.addModelInteraction(data)
     modelInteractions[model][#modelInteractions[model] + 1] = tableData
 
     return id
-end exports('AddModelInteraction', api.addModelInteraction)
+end
+exports('AddModelInteraction', api.addModelInteraction)
 
 local function removeFilteredInteraction(interaction)
     if not interaction.groups or hasGroup(interaction.groups) then
         local id = interaction.id
+
         for i = #filteredInteractions, 1, -1 do
             if filteredInteractions[i].id == id then
                 table.remove(filteredInteractions, i)
@@ -393,7 +393,8 @@ exports('RemoveInteraction', api.removeInteraction)
 -- Remove an interaction point by entity.
 function api.removeInteractionByEntity()
     lib.print.warn('removeInteractionByEntity is deprecated, use RemoveLocalEntityInteraction instead')
-end exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
+end
+exports('RemoveInteractionByEntity', api.removeInteractionByEntity)
 
 function api.removeLocalEntityInteraction(entity, id)
     if entity and id and entityInteractions[entity] then
@@ -407,7 +408,8 @@ function api.removeLocalEntityInteraction(entity, id)
             end
         end
     end
-end exports('RemoveLocalEntityInteraction', api.removeLocalEntityInteraction)
+end
+exports('RemoveLocalEntityInteraction', api.removeLocalEntityInteraction)
 
 function api.removeModelInteraction(model, id)
     if model and id and modelInteractions[model] then
@@ -421,7 +423,8 @@ function api.removeModelInteraction(model, id)
             end
         end
     end
-end exports('RemoveModelInteraction', api.removeModelInteraction)
+end
+exports('RemoveModelInteraction', api.removeModelInteraction)
 
 function api.removeEntityInteraction(netId, id)
     if netId and id and netInteractions[netId] then
@@ -435,7 +438,8 @@ function api.removeEntityInteraction(netId, id)
             end
         end
     end
-end exports('RemoveEntityInteraction', api.removeEntityInteraction)
+end
+exports('RemoveEntityInteraction', api.removeEntityInteraction)
 
 RegisterNetEvent('interact:removeEntity', function(data)
     for i = 1, #data do
@@ -461,7 +465,8 @@ function api.removeGlobalVehicleInteraction(id)
             end
         end
     end
-end exports('RemoveGlobalVehicleInteraction', api.removeGlobalVehicleInteraction)
+end
+exports('RemoveGlobalVehicleInteraction', api.removeGlobalVehicleInteraction)
 
 function api.removeGlobalPlayerInteraction(id)
     if id then
@@ -475,7 +480,9 @@ function api.removeGlobalPlayerInteraction(id)
             end
         end
     end
-end exports('RemoveGlobalPlayerInteraction', api.removeGlobalPlayerInteraction)
+end
+exports('RemoveGlobalPlayerInteraction', api.removeGlobalPlayerInteraction)
+
 ---@param id number : The id of the interaction to remove the option from
 ---@param name? string : The name of the option to remove
 -- Remove an option from an interaction point by id.
@@ -499,7 +506,8 @@ function api.removeInteractionOption(id, name)
             log:debug('Removed option %s from interaction %s', name, id)
         end
     end
-end exports('RemoveInteractionOption', api.removeInteractionOption)
+end
+exports('RemoveInteractionOption', api.removeInteractionOption)
 
 ---@param id number : The id of the interaction to update
 ---@param options table : The new options to update the interaction with
@@ -518,7 +526,8 @@ function api.updateInteraction(id, options)
         interactions[id].options = options
         filterInteractions()
     end
-end exports('UpdateInteraction', api.updateInteraction)
+end
+exports('UpdateInteraction', api.updateInteraction)
 
 local function canInteract(option, interaction)
     return not option.canInteract or option.canInteract(interaction.entity, interaction.coords, interaction.args)
@@ -537,8 +546,8 @@ local function getInteractionOptions(interaction)
 
             if success and result then
                 if not option.job or hasGroup(option.job) then
-                        added += 1
-                        currentOptions[added] = option
+                    added += 1
+                    currentOptions[added] = option
                 end
             end
         end
@@ -589,6 +598,7 @@ end
 
 local function addGlobalPlayerData(interaction, options, playercoords)
     local playerAmount, players, serverIds = entities.getEntitiesByType('players')
+
     if playerAmount > 0 then
         local amount = #options
 
@@ -692,7 +702,7 @@ function api.getNearbyInteractions()
     end
 
     if amount > 1 then
-        table_sort(options, function(a, b)
+        table.sort(options, function(a, b)
             return a.curDist < b.curDist
         end)
     end
@@ -702,7 +712,8 @@ end
 
 function api.disable(state)
     LocalPlayer.state:set('interactionsDisabled', state, false)
-end exports('Disable', api.disable)
+end
+exports('Disable', api.disable)
 
 AddEventHandler('onClientResourceStop', function(resource)
     for i = #interactions, 1, -1 do

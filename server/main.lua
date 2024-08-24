@@ -6,6 +6,7 @@ local entityStates = {}
 
 RegisterNetEvent('interact:setEntityHasOptions', function(netId)
     local entity = Entity(NetworkGetEntityFromNetworkId(netId))
+
     entity.state.hasInteractOptions = true
     entityStates[netId] = entity
 end)
@@ -21,7 +22,6 @@ CreateThread(function()
             if not DoesEntityExist(entity.__data) or not entity.state.hasInteractOptions then
                 entityStates[netId] = nil
                 num += 1
-
                 arr[num] = netId
             end
         end
