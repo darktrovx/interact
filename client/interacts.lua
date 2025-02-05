@@ -78,7 +78,7 @@ local function CreateInteractions()
                         currentSelection += 1
                     end
 
-                    if IsControlJustPressed(0, 38) and isClose then
+                    if isClose and IsControlJustPressed(0, 38) then
                         local option = options[currentSelection]
 
                         if option then
